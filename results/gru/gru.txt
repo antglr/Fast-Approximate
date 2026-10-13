@@ -1,39 +1,39 @@
-GRU, pooled runs               trained on 3 run(s), seed 0: 18 epochs, val L1 4.63 % (hybrid 4.66 %), 139 s
-GRU, pooled runs               trained on 3 run(s), seed 1: 16 epochs, val L1 4.62 % (hybrid 4.66 %), 119 s
-GRU, pooled runs               trained on 3 run(s), seed 2: 8 epochs, val L1 4.64 % (hybrid 4.66 %), 54 s
-GRU, pooled runs, charge only  trained on 3 run(s), seed 0: 16 epochs, val L1 4.62 % (hybrid 4.66 %), 116 s
-GRU, pooled runs, charge only  trained on 3 run(s), seed 1: 9 epochs, val L1 4.62 % (hybrid 4.66 %), 66 s
-GRU, pooled runs, charge only  trained on 3 run(s), seed 2: 24 epochs, val L1 4.62 % (hybrid 4.66 %), 166 s
-GRU, other runs only           trained on 2 run(s), seed 0: 9 epochs, val L1 4.86 % (hybrid 4.88 %), 49 s
-GRU, other runs only           trained on 2 run(s), seed 1: 15 epochs, val L1 4.85 % (hybrid 4.88 %), 87 s
-GRU, other runs only           trained on 2 run(s), seed 2: 7 epochs, val L1 4.87 % (hybrid 4.88 %), 45 s
-GRU, other runs only           trained on 2 run(s), seed 0: 5 epochs, val L1 5.81 % (hybrid 5.81 %), 22 s
-GRU, other runs only           trained on 2 run(s), seed 1: 6 epochs, val L1 5.78 % (hybrid 5.81 %), 26 s
-GRU, other runs only           trained on 2 run(s), seed 2: 5 epochs, val L1 5.81 % (hybrid 5.81 %), 19 s
-GRU, other runs only           trained on 2 run(s), seed 0: 16 epochs, val L1 2.83 % (hybrid 2.91 %), 58 s
-GRU, other runs only           trained on 2 run(s), seed 1: 8 epochs, val L1 2.84 % (hybrid 2.91 %), 25 s
-GRU, other runs only           trained on 2 run(s), seed 2: 6 epochs, val L1 2.84 % (hybrid 2.91 %), 20 s
+GRU, pooled runs               trained on 3 run(s), seed 0: 9 epochs, val L1 4.65 % (hybrid 4.68 %), 100 s
+GRU, pooled runs               trained on 3 run(s), seed 1: 6 epochs, val L1 4.64 % (hybrid 4.68 %), 45 s
+GRU, pooled runs               trained on 3 run(s), seed 2: 6 epochs, val L1 4.65 % (hybrid 4.68 %), 47 s
+GRU, pooled runs, charge only  trained on 3 run(s), seed 0: 10 epochs, val L1 4.64 % (hybrid 4.68 %), 96 s
+GRU, pooled runs, charge only  trained on 3 run(s), seed 1: 8 epochs, val L1 4.64 % (hybrid 4.68 %), 60 s
+GRU, pooled runs, charge only  trained on 3 run(s), seed 2: 9 epochs, val L1 4.64 % (hybrid 4.68 %), 92 s
+GRU, other runs only           trained on 2 run(s), seed 0: 9 epochs, val L1 4.88 % (hybrid 4.90 %), 67 s
+GRU, other runs only           trained on 2 run(s), seed 1: 6 epochs, val L1 4.87 % (hybrid 4.90 %), 42 s
+GRU, other runs only           trained on 2 run(s), seed 2: 13 epochs, val L1 4.87 % (hybrid 4.90 %), 84 s
+GRU, other runs only           trained on 2 run(s), seed 0: 13 epochs, val L1 5.84 % (hybrid 5.84 %), 59 s
+GRU, other runs only           trained on 2 run(s), seed 1: 6 epochs, val L1 5.83 % (hybrid 5.84 %), 27 s
+GRU, other runs only           trained on 2 run(s), seed 2: 8 epochs, val L1 5.82 % (hybrid 5.84 %), 35 s
+GRU, other runs only           trained on 2 run(s), seed 0: 22 epochs, val L1 2.84 % (hybrid 2.91 %), 90 s
+GRU, other runs only           trained on 2 run(s), seed 1: 11 epochs, val L1 2.85 % (hybrid 2.91 %), 40 s
+GRU, other runs only           trained on 2 run(s), seed 2: 15 epochs, val L1 2.84 % (hybrid 2.91 %), 58 s
 
 next-shot MAE (nC) on each run's test region (last 10 %); GRU = mean of 3 seeds' forecasts, seed std = spread of the single-seed MAEs
                 run                       forecast  test MAE seed std  stable after change  dMAE %
 2026-10-09_07-46-07         9-shot mean (baseline)    0.5053           0.2866       1.8845  0.0000
-2026-10-09_07-46-07          hybrid (z=6, wmax=20)    0.3479           0.2819       0.7995 31.1548
-2026-10-09_07-46-07 combined, ridge on pooled runs    0.3411           0.2747       0.8024 32.5028
-2026-10-09_07-46-07               GRU, pooled runs    0.3411   0.0008  0.2743       0.8051 32.4911
-2026-10-09_07-46-07  GRU, pooled runs, charge only    0.3425   0.0005  0.2764       0.8079 32.2244
-2026-10-09_07-46-07           GRU, other runs only    0.3412   0.0011  0.2745       0.8046 32.4731
+2026-10-09_07-46-07          hybrid (z=6, wmax=20)    0.3500           0.2819       0.8262 30.7248
+2026-10-09_07-46-07 combined, ridge on pooled runs    0.3472           0.2790       0.8343 31.2910
+2026-10-09_07-46-07               GRU, pooled runs    0.3482   0.0004  0.2796       0.8328 31.0876
+2026-10-09_07-46-07  GRU, pooled runs, charge only    0.3447   0.0005  0.2764       0.8355 31.7900
+2026-10-09_07-46-07           GRU, other runs only    0.3477   0.0014  0.2791       0.8332 31.1860
 2026-10-08_21-11-47         9-shot mean (baseline)    0.1442           0.1442               0.0000
 2026-10-08_21-11-47          hybrid (z=6, wmax=20)    0.1414           0.1414               1.9255
-2026-10-08_21-11-47 combined, ridge on pooled runs    0.1396           0.1396               3.1932
-2026-10-08_21-11-47               GRU, pooled runs    0.1401   0.0003  0.1401               2.8406
-2026-10-08_21-11-47  GRU, pooled runs, charge only    0.1405   0.0002  0.1405               2.5246
-2026-10-08_21-11-47           GRU, other runs only    0.1404   0.0004  0.1404               2.5902
-2026-10-08_00-08-19         9-shot mean (baseline)    0.0702           0.0265       0.2962  0.0000
-2026-10-08_00-08-19          hybrid (z=6, wmax=20)    0.0482           0.0261       0.1465 31.3315
-2026-10-08_00-08-19 combined, ridge on pooled runs    0.0480           0.0257       0.1456 31.6450
-2026-10-08_00-08-19               GRU, pooled runs    0.0481   0.0001  0.0258       0.1467 31.5570
-2026-10-08_00-08-19  GRU, pooled runs, charge only    0.0480      0.0  0.0259       0.1462 31.6546
-2026-10-08_00-08-19           GRU, other runs only    0.0481   0.0001  0.0261       0.1464 31.4948
--> /tmp/clear_rerun/gru_final2/gru_2026-10-09_07-46-07.png
--> /tmp/clear_rerun/gru_final2/gru_2026-10-08_21-11-47.png
--> /tmp/clear_rerun/gru_final2/gru_2026-10-08_00-08-19.png
+2026-10-08_21-11-47 combined, ridge on pooled runs    0.1397           0.1397               3.0676
+2026-10-08_21-11-47               GRU, pooled runs    0.1406      0.0  0.1406               2.5028
+2026-10-08_21-11-47  GRU, pooled runs, charge only    0.1409   0.0002  0.1409               2.2701
+2026-10-08_21-11-47           GRU, other runs only    0.1403   0.0004  0.1403               2.7080
+2026-10-08_00-08-19         9-shot mean (baseline)    0.0702           0.0258       0.2962  0.0000
+2026-10-08_00-08-19          hybrid (z=6, wmax=20)    0.0494           0.0255       0.1515 29.6879
+2026-10-08_00-08-19 combined, ridge on pooled runs    0.0491           0.0250       0.1507 30.0528
+2026-10-08_00-08-19               GRU, pooled runs    0.0491   0.0001  0.0252       0.1513 30.0592
+2026-10-08_00-08-19  GRU, pooled runs, charge only    0.0492      0.0  0.0253       0.1511 29.9746
+2026-10-08_00-08-19           GRU, other runs only    0.0493   0.0001  0.0255       0.1513 29.8285
+-> results/gru/gru_2026-10-09_07-46-07.png
+-> results/gru/gru_2026-10-08_21-11-47.png
+-> results/gru/gru_2026-10-08_00-08-19.png

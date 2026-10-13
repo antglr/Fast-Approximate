@@ -21,7 +21,12 @@ def load_run(tables, run):
     x = pd.DataFrame({'step': step(align(d['PGLA'], pid, rf_shift(d['PGLA_off']))) / PER_NC,
                       'lab': align(L['lab'], pid, meter_shift(delay)) * 1e6,
                       'clex': align(L['clex'], pid, meter_shift(delay)) * 1e6}, index=df.index)
-    x = x.replace([np.inf, -np.inf], np.nan).interpolate(limit_direction='both')
+    x = x.replace([np.inf, -np.inf], np.nan)
+    for k in ('lab', 'clex', 'step'):
+        x[k + '_ok'] = x[k].notna()          # this pulse's own reading exists (~10 % of meter, 13-36 % of step readings don't)
+    # fill gaps with the last reading: interpolating fills shot n from later shots, a leak into the causal features
+    # (bfill only fills the first shots of a run, before any reading)
+    x = x.ffill().bfill()
     # shots where the BCM itself is wrong (stuck low while the beam-loading step sees full charge): never train on them
     qstep = x.step.rolling(41, center=True, min_periods=10).median()
     bcm_bad = (qstep > 1) & (df[TARGET] < 0.5 * qstep)

@@ -1,52 +1,52 @@
-2026-10-08_00-08-19: 25500 shots, test from shot 22950 (2550 shots, 2459 scored); 176 dropouts, 72 BCM-wrong shots
+2026-10-08_00-08-19: 25500 shots, test from shot 22950 (2550 shots, 2459 scored); 176 dropouts, 76 BCM-wrong shots
 
 1. rolling mean of the last W good shots: test MAE (nC) per horizon; * = window picked on the train part
    W    h=1     h=2     h=5     h=10    h=20    h=50    
-   1    0.0469  0.0552  0.0798  0.1084  0.1572  0.2734  
-   3    0.0507  0.0604  0.0827  0.1123  0.1584  0.2803  
-   5    0.0581  0.0665  0.0871  0.1175  0.1623  0.2875  
-   9    0.0713  0.0787  0.0990  0.1281  0.1708  0.3003  
-   20   0.1048* 0.1109* 0.1268* 0.1498* 0.1997* 0.3294* 
-   50   0.1807  0.1869  0.2030  0.2275  0.2737  0.4024  
-   100  0.2809  0.2858  0.3000  0.3225  0.3655  0.4677  
-   200  0.4277  0.4312  0.4416  0.4584  0.4910  0.5765  
-   500  0.6193  0.6207  0.6250  0.6320  0.6458  0.6835  
+   1    0.0469  0.0547  0.0787  0.1074  0.1558  0.2718  
+   3    0.0502  0.0594  0.0811  0.1108  0.1567  0.2789  
+   5    0.0570  0.0648  0.0849  0.1153  0.1601  0.2859  
+   9    0.0692  0.0761  0.0958  0.1245  0.1676  0.2984  
+   20   0.1008* 0.1063* 0.1219* 0.1450* 0.1949* 0.3265* 
+   50   0.1751  0.1813  0.1974  0.2226  0.2693  0.3986  
+   100  0.2788  0.2837  0.2978  0.3204  0.3633  0.4656  
+   200  0.4265  0.4300  0.4404  0.4572  0.4898  0.5753  
+   500  0.6185  0.6200  0.6243  0.6313  0.6451  0.6828  
 
 2. ridge on past charge + laser + step vs the 9-shot mean (test region)
        MAE      R2  baseline_MAE    dMAE  coverage   dMAE %  tuned W  tuned MAE
 h                                                                              
-1   0.1210  0.9251        0.0702 -0.0508    0.9984 -72.2967       20     0.1048
-2   0.1431  0.8925        0.0775 -0.0655    0.9972 -84.5232       20     0.1109
-5   0.1886  0.8246        0.0986 -0.0900    0.9935 -91.2410       20     0.1268
-10  0.2168  0.7685        0.1285 -0.0883    0.9902 -68.7035       20     0.1498
-20  0.2504  0.6646        0.1747 -0.0757    0.9874 -43.3497       20     0.1997
-50  0.4353  0.1341        0.3167 -0.1185    0.9797 -37.4260       20     0.3294
+1   0.1119  0.9322        0.0702 -0.0417    0.9984 -59.4097       20     0.1008
+2   0.1353  0.9007        0.0775 -0.0578    0.9972 -74.5253       20     0.1063
+5   0.1797  0.8371        0.0986 -0.0811    0.9935 -82.2396       20     0.1219
+10  0.2058  0.7859        0.1285 -0.0773    0.9902 -60.1636       20     0.1450
+20  0.2485  0.6672        0.1747 -0.0738    0.9874 -42.2175       20     0.1949
+50  0.4260  0.1689        0.3167 -0.1093    0.9797 -34.4993       20     0.3265
 
    largest standardised ridge coefficients (nC per std):
-   h=1   q50 +0.047  trend -0.029  lab9 +0.028  q20 -0.024
-   h=10  lab9 +0.049  q200 +0.046  lab1 +0.042  trend -0.039
-   h=50  lab9 +0.092  q200 +0.086  lab1 +0.055  clex9 -0.042
+   h=1   q50 +0.043  lab9 +0.033  trend -0.029  q20 -0.024
+   h=10  lab9 +0.052  q200 +0.041  trend -0.038  lab1 +0.038
+   h=50  lab9 +0.100  q200 +0.083  lab1 +0.051  clex9 -0.046
 
-autocorrelation of (charge - 9-shot mean): lag1 +0.257, lag5 -0.064, lag20 +0.023
+autocorrelation of (charge - 9-shot mean): lag1 +0.243, lag5 -0.064, lag20 +0.016
 
 3. test MAE (nC) split by regime: 2131 steady shots, 328 within 20 shots of a level change
-   h=1    9-shot mean: steady 0.0356 change 0.296  mean W=20: steady 0.0453 change 0.487  ridge: steady 0.0750 change 0.421
-   h=5    9-shot mean: steady 0.0418 change 0.473  mean W=20: steady 0.0500 change 0.626  ridge: steady 0.1106 change 0.702
-   h=10   9-shot mean: steady 0.0492 change 0.658  mean W=20: steady 0.0537 change 0.785  ridge: steady 0.1130 change 0.910
+   h=1    9-shot mean: steady 0.0356 change 0.296  mean W=20: steady 0.0401 change 0.491  ridge: steady 0.0682 change 0.398
+   h=5    9-shot mean: steady 0.0418 change 0.473  mean W=20: steady 0.0436 change 0.630  ridge: steady 0.1062 change 0.664
+   h=10   9-shot mean: steady 0.0492 change 0.658  mean W=20: steady 0.0475 change 0.789  ridge: steady 0.1062 change 0.871
 -> results/2026-10-08_00-08-19/next_shot.png
 
-5. next-shot residual = measured - predicted, 23552 stable shots of the whole run (skew SE 0.02, excess-kurtosis SE 0.03; Gaussian: both 0)
+5. next-shot residual = measured - predicted, 23554 stable shots of the whole run (skew SE 0.02, excess-kurtosis SE 0.03; Gaussian: both 0)
                  model         shots     n   mean   std   MAE  rel std %   skew  ex.kurt
-9-shot mean (baseline)       all, nC 23552 -0.000 0.155 0.113      4.591 -0.098    1.456
-9-shot mean (baseline)         ~1 nC  4045 -0.000 0.027 0.019      7.915 -5.158  142.653
+9-shot mean (baseline)       all, nC 23554 -0.000 0.154 0.113      4.582 -0.094    1.443
+9-shot mean (baseline)         ~1 nC  4047  0.000 0.024 0.019      7.883  0.027    0.533
 9-shot mean (baseline)       ~5.5 nC 19507 -0.000 0.169 0.132      3.529 -0.085    0.710
-9-shot mean (baseline) all, relative 23552    NaN   NaN   NaN      4.591 -0.042    3.231
-          20-shot mean       all, nC 23552 -0.001 0.152 0.111      4.728 -0.087    1.473
-          20-shot mean         ~1 nC  4045 -0.001 0.029 0.019      8.479 -5.674  117.913
+9-shot mean (baseline) all, relative 23554    NaN   NaN   NaN      4.582 -0.006    2.919
+          20-shot mean       all, nC 23554 -0.001 0.152 0.111      4.494 -0.083    1.466
+          20-shot mean         ~1 nC  4047 -0.000 0.023 0.018      7.705  0.042    0.571
           20-shot mean       ~5.5 nC 19507 -0.001 0.167 0.130      3.475 -0.074    0.728
-          20-shot mean all, relative 23552    NaN   NaN   NaN      4.728 -1.458   25.255
-   ridge (out-of-fold)       all, nC 23552  0.002 0.154 0.113      9.168 -0.035    1.796
-   ridge (out-of-fold)         ~1 nC  4045  0.010 0.074 0.033     20.505  5.705   62.248
-   ridge (out-of-fold)       ~5.5 nC 19507  0.001 0.166 0.129      3.460 -0.114    0.752
-   ridge (out-of-fold) all, relative 23552    NaN   NaN   NaN      9.168 13.021  285.178
+          20-shot mean all, relative 23554    NaN   NaN   NaN      4.494  0.003    2.891
+   ridge (out-of-fold)       all, nC 23554  0.002 0.154 0.113      8.405 -0.067    1.604
+   ridge (out-of-fold)         ~1 nC  4047  0.009 0.066 0.031     18.568  6.004   56.440
+   ridge (out-of-fold)       ~5.5 nC 19507  0.000 0.166 0.130      3.463 -0.116    0.750
+   ridge (out-of-fold) all, relative 23554    NaN   NaN   NaN      8.405 11.781  243.266
 -> results/2026-10-08_00-08-19/residuals_stable.png
