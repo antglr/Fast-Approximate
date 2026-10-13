@@ -1,0 +1,26 @@
+# Data (large HDF5 chunks, download from CERNBox — see README)
+data/
+*.h5
+*.hdf5
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+.python-version
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Outputs
+outputs/
+figures/
+*.npz
+
+# OS / editors
+.DS_Store
+.vscode/
+.idea/
