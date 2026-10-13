@@ -59,7 +59,8 @@ def prepare(tables, run):
     # train the correction on stable beam only: during scans the charge ramps without a restart, and learning to chase
     # the last shots there adds noise on stable beam. (The label looks ahead, but only selects training rows.)
     fit = train & (df.index + 1 < cut) & np.isfinite(y) & stable.shift(-1, fill_value=False).values & on
-    return dict(df=df, p=p, F=F, y=y, fit=fit, on=on, jump=jump, stable=stable, train=train, q=q, med=med)
+    return dict(df=df, p=p, F=F, y=y, fit=fit, on=on, jump=jump, stable=stable, train=train, q=q, med=med, x=x,
+                used=np.asarray(used, bool))
 
 
 def score(r, pred_next):
@@ -67,59 +68,64 @@ def score(r, pred_next):
     return score_forecast(r['df'], pd.DataFrame({'shot': r['df'].index + 1, 'h': 1, 'pred': np.asarray(pred_next)})).MAE[1]
 
 
-tables, out, runs = sys.argv[1], sys.argv[2], sys.argv[3:]
-R = {run: prepare(tables, run) for run in runs}
-fits = {f'own run': {run: [run] for run in runs}, 'pooled runs': {run: runs for run in runs}}
-if len(runs) > 1:
-    fits['other runs only'] = {run: [o for o in runs if o != run] for run in runs}
-models = {}
-for kind, src in fits.items():
-    for run, use in src.items():
-        key = tuple(use)
-        if key not in models:
-            X = pd.concat([R[u]['F'][R[u]['fit']] for u in use])
-            y = np.concatenate([R[u]['y'][R[u]['fit']] for u in use])
-            models[key] = RidgeCV(alphas=ALPHAS).fit(X, y)
-
-rows = []
-for run, r in R.items():
-    shots = scored_shots(r['df'])
-    yq = r['df'].loc[shots, TARGET].values
-    st, ch = (r['stable'] & ~r['train']).reindex(shots).values, r['jump'].reindex(shots).values
-    cands = {'9-shot mean (baseline)': rolling_baseline(r['df']).values, f'hybrid (z={Z}, wmax={WMAX})': r['p'].values}
+def main():
+    tables, out, runs = sys.argv[1], sys.argv[2], sys.argv[3:]
+    R = {run: prepare(tables, run) for run in runs}
+    fits = {f'own run': {run: [run] for run in runs}, 'pooled runs': {run: runs for run in runs}}
+    if len(runs) > 1:
+        fits['other runs only'] = {run: [o for o in runs if o != run] for run in runs}
+    models = {}
     for kind, src in fits.items():
-        cands[f'combined, ridge on {kind}'] = r['p'].values * (1 + r['on'] * models[tuple(src[run])].predict(r['F']))
-    for name, v in cands.items():
-        e = np.abs(yq - pd.Series(v, r['df'].index).shift(1).reindex(shots).values)
-        rows.append({'run': run, 'forecast': name, 'test MAE': score(r, v), 'stable': np.nanmean(e[st]),
-                     'after change': np.nanmean(e[ch]) if ch.any() else np.nan, 'n stable': st.sum(), 'n change': ch.sum()})
-    r['cands'] = cands
-T = pd.DataFrame(rows)
-T['dMAE %'] = T.groupby('run')['test MAE'].transform(lambda s: 100 * (1 - s / s.iloc[0]))
-pd.set_option('display.width', 250)
-print('next-shot MAE (nC) on each run\'s test region (last 10 %); stable / after change = the test shots in each regime')
-print(T.round(4).to_string(index=False))
-m = models[tuple(runs)]
-print(f'\npooled ridge (alpha {m.alpha_:.3g}): relative correction per std of each feature, in % of the level')
-X = pd.concat([R[u]['F'][R[u]['fit']] for u in runs])
-print('  ' + '  '.join(f'{k} {100 * c * s:+.3f}' for k, c, s in zip(X.columns, m.coef_, X.std())))
+        for run, use in src.items():
+            key = tuple(use)
+            if key not in models:
+                X = pd.concat([R[u]['F'][R[u]['fit']] for u in use])
+                y = np.concatenate([R[u]['y'][R[u]['fit']] for u in use])
+                models[key] = RidgeCV(alphas=ALPHAS).fit(X, y)
 
-import matplotlib; matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-for run, r in R.items():
-    shots = scored_shots(r['df'])
-    yq = r['df'].loc[shots, TARGET].values
-    show = {'9-shot mean (baseline)': 'C0', f'hybrid (z={Z}, wmax={WMAX})': 'C2', 'combined, ridge on pooled runs': 'C3'}
-    fig, ax = plt.subplots(2, 1, figsize=(15, 8), gridspec_kw={'height_ratios': [2, 1]})
-    ax[0].plot(shots, yq, '.', color='k', ms=2, label='actual BCM_GUN')
-    for k, c in show.items():
-        v = pd.Series(r['cands'][k], r['df'].index).shift(1).reindex(shots).values
-        ax[0].plot(shots, v, '-', color=c, lw=0.8, label=f'{k}: MAE {np.nanmean(np.abs(yq - v)):.4f} nC')
-        d = 100 * (yq - v) / r['med'].reindex(shots).values
-        ax[1].hist(d[np.isfinite(d)], np.linspace(-20, 20, 81), histtype='step', color=c,
-                   label=f'{k}: mean |error| {np.nanmean(np.abs(d)):.2f} %, median {np.nanmedian(np.abs(d)):.2f} %')
-    ax[0].set_xlabel('shot'); ax[0].set_ylabel('charge (nC)'); ax[0].legend(loc='upper left', fontsize=8)
-    ax[0].set_title(f'{run}: next-shot forecast, test region')
-    ax[1].set_yscale('log'); ax[1].set_xlabel('(measured - predicted) / level (%)'); ax[1].legend(fontsize=8)
-    fig.tight_layout(); fig.savefig(os.path.join(out, f'combined_{run}.png'), dpi=110)
-    print('->', os.path.join(out, f'combined_{run}.png'))
+    rows = []
+    for run, r in R.items():
+        shots = scored_shots(r['df'])
+        yq = r['df'].loc[shots, TARGET].values
+        st, ch = (r['stable'] & ~r['train']).reindex(shots).values, r['jump'].reindex(shots).values
+        cands = {'9-shot mean (baseline)': rolling_baseline(r['df']).values, f'hybrid (z={Z}, wmax={WMAX})': r['p'].values}
+        for kind, src in fits.items():
+            cands[f'combined, ridge on {kind}'] = r['p'].values * (1 + r['on'] * models[tuple(src[run])].predict(r['F']))
+        for name, v in cands.items():
+            e = np.abs(yq - pd.Series(v, r['df'].index).shift(1).reindex(shots).values)
+            rows.append({'run': run, 'forecast': name, 'test MAE': score(r, v), 'stable': np.nanmean(e[st]),
+                         'after change': np.nanmean(e[ch]) if ch.any() else np.nan, 'n stable': st.sum(), 'n change': ch.sum()})
+        r['cands'] = cands
+    T = pd.DataFrame(rows)
+    T['dMAE %'] = T.groupby('run')['test MAE'].transform(lambda s: 100 * (1 - s / s.iloc[0]))
+    pd.set_option('display.width', 250)
+    print('next-shot MAE (nC) on each run\'s test region (last 10 %); stable / after change = the test shots in each regime')
+    print(T.round(4).to_string(index=False))
+    m = models[tuple(runs)]
+    print(f'\npooled ridge (alpha {m.alpha_:.3g}): relative correction per std of each feature, in % of the level')
+    X = pd.concat([R[u]['F'][R[u]['fit']] for u in runs])
+    print('  ' + '  '.join(f'{k} {100 * c * s:+.3f}' for k, c, s in zip(X.columns, m.coef_, X.std())))
+
+    import matplotlib; matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    for run, r in R.items():
+        shots = scored_shots(r['df'])
+        yq = r['df'].loc[shots, TARGET].values
+        show = {'9-shot mean (baseline)': 'C0', f'hybrid (z={Z}, wmax={WMAX})': 'C2', 'combined, ridge on pooled runs': 'C3'}
+        fig, ax = plt.subplots(2, 1, figsize=(15, 8), gridspec_kw={'height_ratios': [2, 1]})
+        ax[0].plot(shots, yq, '.', color='k', ms=2, label='actual BCM_GUN')
+        for k, c in show.items():
+            v = pd.Series(r['cands'][k], r['df'].index).shift(1).reindex(shots).values
+            ax[0].plot(shots, v, '-', color=c, lw=0.8, label=f'{k}: MAE {np.nanmean(np.abs(yq - v)):.4f} nC')
+            d = 100 * (yq - v) / r['med'].reindex(shots).values
+            ax[1].hist(d[np.isfinite(d)], np.linspace(-20, 20, 81), histtype='step', color=c,
+                       label=f'{k}: mean |error| {np.nanmean(np.abs(d)):.2f} %, median {np.nanmedian(np.abs(d)):.2f} %')
+        ax[0].set_xlabel('shot'); ax[0].set_ylabel('charge (nC)'); ax[0].legend(loc='upper left', fontsize=8)
+        ax[0].set_title(f'{run}: next-shot forecast, test region')
+        ax[1].set_yscale('log'); ax[1].set_xlabel('(measured - predicted) / level (%)'); ax[1].legend(fontsize=8)
+        fig.tight_layout(); fig.savefig(os.path.join(out, f'combined_{run}.png'), dpi=110)
+        print('->', os.path.join(out, f'combined_{run}.png'))
+
+
+if __name__ == '__main__':
+    main()

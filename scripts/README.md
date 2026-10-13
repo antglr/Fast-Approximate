@@ -25,6 +25,7 @@ PY=python3 scripts/run_pipeline.sh 2026-10-09_07-46-07 data/h5 data/tables resul
 | `forecasters.py` | `hybrid()`: the level-change-aware mean, shared by the two scripts below |
 | `hybrid_forecast.py` | Tunes and scores the hybrid on one run |
 | `combined_forecast.py` | The hybrid plus a ridge correction, trained across runs (below); run it after `run_pipeline.sh` |
+| `gru_forecast.py` | GRU sequence model on the last 64 shots, trained across runs (below); needs PyTorch |
 
 Run the scripts with `python -I`. The tables match the ones made from the pickles, except that the camera
 columns are left out.
@@ -214,3 +215,57 @@ python3 -I scripts/combined_forecast.py data/tables results/combined 2026-10-09_
 - **A bug that run 3 caught.** At first the step features were relative to their own 200-shot mean. At 0.3 nC that
   mean is ~0, so the features reached ~1000. The correction from runs 1+2 then raised run 3's stable error from 0.026
   to 0.045 nC (test MAE 0.0628). Dividing by the charge level fixed it, and runs 1 and 2 did not change.
+
+## GRU sequence model (`gru_forecast.py`, `results/gru/`)
+
+```bash
+python3 -I scripts/gru_forecast.py data/tables results/gru 2026-10-09_07-46-07 2026-10-08_21-11-47 2026-10-08_00-08-19
+```
+
+**How it works:**
+- **Input:** the last 64 shots, each with six channels:
+  - charge (0 where the hybrid skipped the shot, plus a skip flag);
+  - hybrid level;
+  - lab and clex laser meters;
+  - beam-loading-step charge.
+- **Scaling:** charges are divided by the hybrid level at the newest shot, and the laser meters by their window mean.
+  Each channel is then divided by its training std.
+- **Output:** the next shot relative to the hybrid level, so 0 means "same as the hybrid".
+- **Model:** one GRU layer with 32 hidden units, then a linear layer.
+- **Training:**
+  - L1 loss, because the metric is MAE.
+  - Trained on every good next shot of the first 90 % of the runs, early-stopped on the last 10 % of those.
+  - 3 seeds per variant, with their forecasts averaged.
+- **Run time:** about 1 min per fit on 4 CPU threads (12 threads is 9× slower), about 15 min in total.
+- **To try more inputs, add channels in `windows()`.**
+
+| Next-shot test MAE (nC) | run 1 (09_07) | run 2 (08_21) | run 3 (08_00) |
+|---|---|---|---|
+| 9-shot mean (baseline) | 0.505 | 0.1442 | 0.0702 |
+| hybrid (z = 6, wmax = 20) | 0.348 (−31 %) | 0.1414 (−2 %) | 0.0482 (−31 %) |
+| **combined (hybrid + ridge)** | **0.341 (−33 %)** | **0.1396 (−3 %)** | **0.0480 (−32 %)** |
+| GRU, pooled runs, charge only | 0.350 (−31 %) | 0.1416 (−2 %) | 0.0506 (−28 %) |
+| GRU, pooled runs, all inputs | 0.366 (−28 %) | 0.1411 (−2 %) | 0.0543 (−23 %) |
+| GRU, other runs only, all inputs | 0.410 (−19 %) | 0.1414 (−2 %) | 0.0575 (−18 %) |
+| GRU, all inputs, not standardised (first try) | 0.351 (−31 %) | 0.1413 (−2 %) | 0.0491 (−30 %) |
+
+Seed-to-seed spread of the test MAE: 0.0002–0.011 nC, and 0.09 nC for "other runs only" on run 1.
+
+- **The GRU satisfies the Hard-tier rule** (a sequence model that beats the 9-shot mean on a chronological split).
+  It does not beat the hybrid it starts from.
+- **On validation it only matches the hybrid**, in every fit (5.27–5.28 % L1 against 5.27 % for the hybrid
+  alone). There is little sequence structure left to learn:
+  - the stable-beam jitter is nearly white (lag-1 autocorrelation ~0.14);
+  - level changes have no warning in the laser data;
+  - the slow laser-driven drift is the ~2–3 % that the ridge correction already takes.
+- **Where it loses is just after step-ups, where it overshoots.** After 0.25 → 1.67 nC it predicts 2.2 nC and decays
+  back over ~20 shots (`gru_<run>.png`, zooms).
+  - The laser channels drive it: a 4 → 11 uJ jump, divided by a training std of ~0.03, saturates the GRU.
+  - The charge-only variant, and the first try without standardisation, overshoot much less.
+- **"Other runs only" is weak on run 1.** Runs 2 and 3 contain no 10 → 19 nC jumps to learn from.
+- **Things to try:**
+  - clip the standardised inputs (at ±5 std);
+  - train on stable shots only, as the ridge correction does;
+  - a longer window (the ridge's strongest feature is a 200-shot mean);
+  - use the GRU as a correction on top of the combined forecaster.
+
