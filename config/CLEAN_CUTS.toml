@@ -1,0 +1,20 @@
+# Clean chunks per run, from visual inspection of BCM_GUN.
+# keep: inclusive ranges of chunk numbers [first, last], or "all".
+# Runs that are not listed are not used.
+
+["acquisition_2026-10-07_21-43-26"]
+keep = [[11, 71]]
+
+["acquisition_2026-10-08_00-08-19"]
+keep = [[0, 193]]
+
+["acquisition_2026-10-08_15-42-27"]
+keep = [[0, 1], [4, 74], [76, 120]]
+
+["acquisition_2026-10-08_21-11-47"]
+keep = "all"
+
+["acquisition_2026-10-09_07-46-07"]
+keep = [[0, 40], [87, 106]]
+
+
