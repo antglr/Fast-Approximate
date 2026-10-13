@@ -20,7 +20,9 @@ PY=python3 scripts/run_pipeline.sh 2026-10-09_07-46-07 data/h5 data/tables resul
 | `pulses.py` | Puts every reading on the 1.2 s pulse grid (see below) |
 | `beam_loading_step.py` | `step()`: the beam-loading dip on the gun pickup PGLA, a second charge measurement |
 | `plot_run.py` | Whole-run overview: BCM charge, step charge, laser, gun field |
-| `forecast_run.py` | Forecast scores for horizons 1–50 and the next-shot plot |
+| `run_data.py` | Loads one run's tables onto the pulse grid; shared shot labels (BCM-wrong, stable, level change) |
+| `forecast_run.py` | Forecast scores for horizons 1–50, the next-shot plot and the stable-shot residuals |
+| `hybrid_forecast.py` | The hybrid next-shot forecaster (below) |
 
 Run the scripts with `python -I`. The tables match the ones made from the pickles, except that the camera
 columns are left out.
@@ -87,3 +89,33 @@ The ridge here is out-of-fold over 10 contiguous blocks.
 - **Implication for next-shot forecasting:** use a long mean on stable beam and react fast at level changes,
   for example when the last laser reading jumps.
 - **One run only.** Scores on other runs will depend on what happens in their last 10 %.
+
+## Hybrid next-shot forecaster (`hybrid_forecast.py`, `hybrid.txt`, `hybrid_next_shot.png`)
+
+The forecast is the mean of the good shots since the last level change, capped at `wmax` shots.
+- **Level change:** the charge deviates from the current mean by more than z × the stable jitter (3.1 %). The mean
+  then restarts at the new shot.
+- **Skipped shots:** a fall of more than 70 % that does not count as a change is treated as a dropout. A reading
+  below half the beam-loading-step charge (trailing 5-shot median) is treated as a stuck BCM.
+- **Causal:** the official dropout labels are used only for scoring.
+- **Tuning:** z and wmax are tuned on the first 90 %.
+
+| Next-shot forecast | test MAE (nC) | vs baseline | test, stable | test, after a change | whole run, stable ~5.5 / ~10 nC |
+|---|---|---|---|---|---|
+| 9-shot mean (baseline) | 0.505 | | 0.287 | 1.88 | 0.135 / 0.300 |
+| 3-shot mean | 0.396 | −22 % | 0.306 | 0.83 | 0.141 / 0.317 |
+| ridge (`forecast_run.py`) | 0.405 | −20 % | | | 0.153 / 0.330 |
+| **hybrid, charge only (z = 5, wmax = 9)** | **0.352** | **−30 %** | 0.287 | 0.80 | 0.134 / 0.300 |
+| hybrid, laser must confirm (z = 4, wmax = 9) | 0.352 | −30 % | 0.287 | 0.80 | 0.136 / 0.300 |
+| hybrid, two shots in a row (z = 3, wmax = 9) | 0.391 | −23 % | 0.285 | 1.12 | 0.134 / 0.299 |
+
+- **The hybrid matches the long mean on stable beam and the 3-shot mean after changes**, and beats both overall.
+- **Robust to tuning:** test MAE stays between 0.345 and 0.355 nC for every z ≥ 4 and every wmax from 9 to 100.
+  - Training picks wmax = 9 because the training part contains a slow laser scan, and a slow ramp never
+    triggers a change.
+  - On stable beam alone, wmax = 20–50 is ~2 % better.
+- **The laser adds nothing here.** Requiring the laser to confirm leaves the test score unchanged and makes the
+  training score worse (0.267 vs 0.233 nC). In training, the charge also changes without the laser: the BCM
+  recovering from its stuck state, and swings of 3–12 nC at shots 5000–5800 while the laser stays flat.
+- **No method can predict the first shot at a new level.** Nothing before that shot shows the change, so the
+  hybrid catches up one shot later.

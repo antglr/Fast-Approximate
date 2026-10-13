@@ -11,3 +11,5 @@ $PY -I $S/reduce_chunks.py "$src" "$T/$r.parquet" | tail -1
 $PY -I $S/plot_run.py "$T" "$r" "$out/run_overview.png" > "$out/run_summary.txt"
 $PY -I $S/forecast_run.py "$T" "$r" "$out/next_shot.png" "$out/residuals_stable.png" > "$out/forecast.txt"
 cat "$out/forecast.txt"
+$PY -I $S/hybrid_forecast.py "$T" "$r" "$out/hybrid_next_shot.png" > "$out/hybrid.txt"
+sed -n '1,12p' "$out/hybrid.txt"

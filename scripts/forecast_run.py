@@ -8,30 +8,13 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import numpy as np
 import pandas as pd
 from sklearn.linear_model import RidgeCV
-from beam_loading_step import step
-from nbfuncs import TARGET, W, cut_shot, dropouts, rolling_baseline, score_forecast, scored_shots
-from pulses import align, meter_shift, pulse_ids, read_delay, rf_shift
+from nbfuncs import TARGET, cut_shot, dropouts, rolling_baseline, score_forecast, scored_shots
+from run_data import level_labels, load_run
 
 H = [1, 2, 5, 10, 20, 50]
 WINDOWS = [1, 3, 5, 9, 20, 50, 100, 200, 500]
-PER_NC = 0.89
 
-p = os.path.join(sys.argv[1], sys.argv[2])
-df = pd.read_parquet(p + '.parquet')
-d, L = np.load(p + '_rf.npz'), np.load(p + '_laser.npz')
-assert np.array_equal(d['shot'], df.index) and np.array_equal(L['shot'], df.index)
-t, ch = d['t'], d['chunk']
-pid = pulse_ids(t, ch)
-delay = read_delay(df['pc_time'], t)
-x = pd.DataFrame({'step': step(align(d['PGLA'], pid, rf_shift(d['PGLA_off']))) / PER_NC,
-                  'lab': align(L['lab'], pid, meter_shift(delay)) * 1e6,
-                  'clex': align(L['clex'], pid, meter_shift(delay)) * 1e6}, index=df.index)
-x = x.replace([np.inf, -np.inf], np.nan).interpolate(limit_direction='both')
-
-# shots where the BCM itself is wrong (stuck low while the beam-loading step sees full charge): never train on them
-qstep = x.step.rolling(41, center=True, min_periods=10).median()
-bcm_bad = (qstep > 1) & (df[TARGET] < 0.5 * qstep)
-good = ~dropouts(df) & ~bcm_bad
+df, x, bcm_bad, good = load_run(sys.argv[1], sys.argv[2])
 q = df[TARGET].where(good)
 cut = cut_shot(df)
 train_origin = df.index < cut
@@ -94,8 +77,7 @@ print(f'\nautocorrelation of (charge - 9-shot mean): lag1 {r(dev, dev.shift(1)):
 # --- 3. where do the errors come from? steady shots vs the 20 shots after a level change -------------------------
 # (labelled with the future, for analysis only: a shot is 'after a change' if the 41-shot centred median of the
 # charge moved by > 20 % within the previous 20 shots)
-med = q.rolling(41, center=True, min_periods=10).median()
-jump = (med / med.shift(20) - 1).abs().rolling(20, min_periods=1).max() > 0.2
+med, jump, stable = level_labels(q, good)
 shots = scored_shots(df)
 print(f'\n3. test MAE (nC) split by regime: {(~jump[shots]).sum()} steady shots, {jump[shots].sum()} within 20 shots of a level change')
 P = pd.concat(preds).set_index(['h', 'shot'])['pred']
@@ -141,10 +123,6 @@ if len(sys.argv) > 4:
     import matplotlib; matplotlib.use('Agg')
     import matplotlib.pyplot as plt
     from scipy import stats
-    span = med.rolling(101, center=True, min_periods=20)
-    # also no BCM-wrong shot or dropout among the last W+1 shots: the official baseline keeps averaging stuck readings
-    recent_bad = (~good).astype(float).rolling(W + 1, min_periods=1).max().astype(bool)
-    stable = good & ~jump & ~recent_bad & ((span.max() - span.min()) / med < 0.10) & q.notna()
     y1 = (q.shift(-1) - base).values
     block = np.arange(len(df)) * 10 // len(df)
     oof = np.full(len(df), np.nan)
