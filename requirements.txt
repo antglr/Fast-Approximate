@@ -1,7 +1,9 @@
 h5py
+ipykernel
+jupyter
+matplotlib
 numpy
 pandas
-matplotlib
-jupyter
-ipykernel
+pyarrow
+scikit-learn
 scipy
