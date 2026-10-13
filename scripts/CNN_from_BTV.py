@@ -312,11 +312,13 @@ def train_lstm(z, T=10, epochs=300):
 if __name__ == "__main__":
     folder = "../test_data/" 
     data = combiner(folder)['BTV0125'][0]['image2D']
+    test_data = combiner(folder)['BTV0125'][1]['image2D']
     ds = ImageSeries(data)
     model = train(ds)
+    ds_test = ImageSeries(test_data)
 
-    evaluate_reconstruction(model, ds)           # decoding metrics
-    plot_reconstructions(model, ds)              # reconstructions.png
-    plot_interpolation(model, ds, i=0, j=50)     # interpolation.png
+    evaluate_reconstruction(model, ds_test)           # decoding metrics
+    plot_reconstructions(model, ds_test)              # reconstructions.png
+    plot_interpolation(model, ds_test, i=0, j=50)     # interpolation.png
     # z = extract_latents(model, ds)               # (100, 16)
     # lstm, stats = train_lstm(z)
