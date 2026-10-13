@@ -4,3 +4,5 @@ pandas
 matplotlib
 jupyter
 ipykernel
+scikit-learn
+pyarrow
