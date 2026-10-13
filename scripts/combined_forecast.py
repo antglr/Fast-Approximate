@@ -59,7 +59,7 @@ def prepare(tables, run):
     # train the correction on stable beam only: during scans the charge ramps without a restart, and learning to chase
     # the last shots there adds noise on stable beam. (The label looks ahead, but only selects training rows.)
     fit = train & (df.index + 1 < cut) & np.isfinite(y) & stable.shift(-1, fill_value=False).values & on
-    return dict(df=df, p=p, F=F, y=y, fit=fit, on=on, jump=jump, stable=stable, train=train, q=q, med=med, x=x,
+    return dict(df=df, p=p, F=F, y=y, fit=fit, on=on, jump=jump, stable=stable, train=train, q=q, med=med, x=x, seg=seg,
                 used=np.asarray(used, bool))
 
 

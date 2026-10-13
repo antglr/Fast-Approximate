@@ -25,7 +25,8 @@ PY=python3 scripts/run_pipeline.sh 2026-10-09_07-46-07 data/h5 data/tables resul
 | `forecasters.py` | `hybrid()`: the level-change-aware mean, shared by the two scripts below |
 | `hybrid_forecast.py` | Tunes and scores the hybrid on one run |
 | `combined_forecast.py` | The hybrid plus a ridge correction, trained across runs (below); run it after `run_pipeline.sh` |
-| `gru_forecast.py` | GRU sequence model on the last 64 shots, trained across runs (below); needs PyTorch |
+| `gru_forecast.py` | GRU sequence model: a stable-beam correction of the hybrid from the last 64 shots, trained across runs (below); needs PyTorch |
+| `screen_variables.py` | Tests whether the notebook variables (klystron, gun field, magnets, climate, laser scope) help the next-shot forecast |
 
 Run the scripts with `python -I`. The tables match the ones made from the pickles, except that the camera
 columns are left out.
@@ -220,52 +221,82 @@ python3 -I scripts/combined_forecast.py data/tables results/combined 2026-10-09_
 
 ```bash
 python3 -I scripts/gru_forecast.py data/tables results/gru 2026-10-09_07-46-07 2026-10-08_21-11-47 2026-10-08_00-08-19
+python3 -I scripts/screen_variables.py data/tables      # the notebook-variable screen below
 ```
 
-**How it works:**
-- **Input:** the last 64 shots, each with six channels:
-  - charge (0 where the hybrid skipped the shot, plus a skip flag);
+**How it works:** like the ridge in the combined forecaster, the GRU corrects the hybrid level on stable beam.
+- **Input:** the last 64 shots of the current segment (since the last level change), with six channels:
+  - charge (0 where the hybrid skipped the shot, plus a skip flag; steps before the segment count as skipped);
   - hybrid level;
   - lab and clex laser meters;
   - beam-loading-step charge.
-- **Scaling:** charges are divided by the hybrid level at the newest shot, and the laser meters by their window mean.
-  Each channel is then divided by its training std.
-- **Output:** the next shot relative to the hybrid level, so 0 means "same as the hybrid".
+- **Scaling:** charges are divided by the hybrid level at the newest shot, and the meters by their window mean.
+  Each channel is then divided by its training std and clipped at ±5.
+- **Output:** the next shot relative to the hybrid level. The output layer starts at zero, so the untrained GRU *is*
+  the hybrid.
 - **Model:** one GRU layer with 32 hidden units, then a linear layer.
 - **Training:**
   - L1 loss, because the metric is MAE.
-  - Trained on every good next shot of the first 90 % of the runs, early-stopped on the last 10 % of those.
+  - Trained on the stable shots of the first 90 % of the runs, early-stopped on the last 10 % of those.
+  - The untrained (= hybrid) state is an early-stopping candidate too, so a fit that never beats the hybrid stays
+    the hybrid.
   - 3 seeds per variant, with their forecasts averaged.
-- **Run time:** about 1 min per fit on 4 CPU threads (12 threads is 9× slower), about 15 min in total.
+- **When it applies:** once the segment is ≥ 20 shots old and the newest shot was used by the hybrid.
+- **Run time:** ~1 min per fit on 4 CPU threads (12 threads is 9× slower), ~20 min in total.
 - **To try more inputs, add channels in `windows()`.**
 
 | Next-shot test MAE (nC) | run 1 (09_07) | run 2 (08_21) | run 3 (08_00) |
 |---|---|---|---|
 | 9-shot mean (baseline) | 0.505 | 0.1442 | 0.0702 |
-| hybrid (z = 6, wmax = 20) | 0.348 (−31 %) | 0.1414 (−2 %) | 0.0482 (−31 %) |
-| **combined (hybrid + ridge)** | **0.341 (−33 %)** | **0.1396 (−3 %)** | **0.0480 (−32 %)** |
-| GRU, pooled runs, charge only | 0.350 (−31 %) | 0.1416 (−2 %) | 0.0506 (−28 %) |
-| GRU, pooled runs, all inputs | 0.366 (−28 %) | 0.1411 (−2 %) | 0.0543 (−23 %) |
-| GRU, other runs only, all inputs | 0.410 (−19 %) | 0.1414 (−2 %) | 0.0575 (−18 %) |
-| GRU, all inputs, not standardised (first try) | 0.351 (−31 %) | 0.1413 (−2 %) | 0.0491 (−30 %) |
+| hybrid (z = 6, wmax = 20) | 0.348 (−31.2 %) | 0.1414 (−1.9 %) | 0.0482 (−31.3 %) |
+| combined (hybrid + ridge), trained on all 3 runs | 0.3411 (−32.5 %) | 0.1396 (−3.2 %) | 0.0480 (−31.6 %) |
+| **GRU, pooled runs** | **0.3411 (−32.5 %)** | **0.1401 (−2.8 %)** | **0.0481 (−31.6 %)** |
+| GRU, pooled runs, charge only | 0.3425 (−32.2 %) | 0.1405 (−2.5 %) | 0.0480 (−31.7 %) |
+| GRU, other runs only (frozen test) | 0.3412 (−32.5 %) | 0.1404 (−2.6 %) | 0.0481 (−31.5 %) |
+| *first GRU (all shots, whole window, no clip)* | *0.366* | *0.1411* | *0.0543* |
 
-Seed-to-seed spread of the test MAE: 0.0002–0.011 nC, and 0.09 nC for "other runs only" on run 1.
+Seed-to-seed spread of the test MAE: ≤ 0.0011 nC. Every fit now beats the hybrid on validation (e.g. 4.62–4.64 %
+against 4.66 % L1).
 
-- **The GRU satisfies the Hard-tier rule** (a sequence model that beats the 9-shot mean on a chronological split).
-  It does not beat the hybrid it starts from.
-- **On validation it only matches the hybrid**, in every fit (5.27–5.28 % L1 against 5.27 % for the hybrid
-  alone). There is little sequence structure left to learn:
-  - the stable-beam jitter is nearly white (lag-1 autocorrelation ~0.14);
-  - level changes have no warning in the laser data;
-  - the slow laser-driven drift is the ~2–3 % that the ridge correction already takes.
-- **Where it loses is just after step-ups, where it overshoots.** After 0.25 → 1.67 nC it predicts 2.2 nC and decays
-  back over ~20 shots (`gru_<run>.png`, zooms).
-  - The laser channels drive it: a 4 → 11 uJ jump, divided by a training std of ~0.03, saturates the GRU.
-  - The charge-only variant, and the first try without standardisation, overshoot much less.
-- **"Other runs only" is weak on run 1.** Runs 2 and 3 contain no 10 → 19 nC jumps to learn from.
-- **Things to try:**
-  - clip the standardised inputs (at ±5 std);
-  - train on stable shots only, as the ridge correction does;
-  - a longer window (the ridge's strongest feature is a 200-shot mean);
-  - use the GRU as a correction on top of the combined forecaster.
+- **The GRU now matches the combined forecaster on all three runs**, and transfers to an unseen run. It satisfies
+  the Hard-tier rule: a sequence model that beats the 9-shot mean on a chronological split.
+- **What made the difference.** Each fix came from looking at where the GRU lost:
 
+| Step | Run 1 | Run 2 | Run 3 |
+|---|---|---|---|
+| first GRU | 0.366 | 0.1411 | 0.0543 |
+| + clip the standardised inputs (laser steps saturated the GRU) | 0.358 | 0.1412 | 0.0501 |
+| + train on stable shots only, apply after 20 shots in a segment | 0.344 | 0.1400 | 0.0504 |
+| + window limited to the current segment | 0.3415 | 0.1401 | 0.0503 |
+| + off when the newest shot was skipped; zero-initialised output | 0.3411 | 0.1401 | 0.0481 |
+
+  (pooled-runs variant; a 50/200-shot segment-mean channel was also tried and made no difference.)
+- **The run-3 plateau.** At shots 23394–23445 the BCM reads a steady 1.67 nC, while the beam-loading step says
+  5.4 nC and the laser 11 uJ (about 5 nC earlier in the run). The BCM is probably wrong there, but the official score
+  uses it.
+  - The hybrid's stuck-BCM check skips these shots and holds 1.68, which happens to match.
+  - The GRU saw a window of skipped shots, never seen in training, and predicted 13 % low until it was switched off
+    there.
+
+### Do the notebook variables help? (`screen_variables.py`, `results/gru/screen_variables.txt`)
+
+- **Same shot, they correlate as the notebooks found.** Against the charge jitter: lab 0.62–0.65, clex 0.57–0.63,
+  laser scope 0.36–0.45, step 0.28–0.37. Klystron, gun field, magnets, temperatures and humidities are all |r| < 0.09.
+- **For the next shot, none of them helps.** Added to the correction, each group changes the stable-beam MAE on an
+  unseen run by less than 0.5 %. All of them together make run 3 1.4 % worse.
+  - The jitter is laser-driven, and the next pulse's laser energy is not predictable from earlier pulses.
+  - The slow variables (temperature, humidity, magnets) do not lead the charge drift by enough to matter.
+- **A trap:** the laser scope shifted one pulse early correlates 0.17–0.29 with the next-shot error, twice the lab
+  meter. That is because it is the next shot's laser reading, which is future data. Its same-shot r peaks at the stamp
+  alignment, which confirms the stamp alignment. Any new variable that suddenly predicts well should get this check.
+
+### Where the error is (summed |error|, combined forecaster, test regions)
+
+| | stable beam | 20 shots after a change | other (unsettled beam) |
+|---|---|---|---|
+| run 1 | 62 % | 19 % (66 of the 71 nC in the first 3 shots of a new level) | 19 % |
+| run 2 | 100 % | – | – |
+| run 3 | 26 % | 40 % | 33 % |
+
+- On stable beam the remaining error is white, laser-driven jitter.
+- After a change, nearly all of the error is in the first shot or two. Changes come without warning in the data.

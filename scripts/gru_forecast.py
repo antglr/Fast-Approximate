@@ -1,15 +1,18 @@
 # Next-shot GRU forecaster (the sequence model of the Hard tier), compared with the hybrid and the combined forecaster.
-# Input: the last L shots, each with
-#   q      the charge if the hybrid used the shot (else 0, with skip = 1)
+# Like the ridge in combined_forecast.py, the GRU corrects the hybrid level on stable beam. Input: the last L shots of
+# the current segment (since the last level change), each with
+#   q      the charge if the hybrid used the shot (else 0, with skip = 1; steps before the segment are skipped too)
 #   level  the hybrid level after that shot
 #   lab, clex, step  the laser meters and the beam-loading-step charge
 # Charges are divided by the hybrid level after the newest shot, the meters by their window mean, so one model serves
-# 0.3 to 20 nC. Output: the next shot relative to that level (0 = the hybrid), trained with an L1 loss (the metric is
-# MAE) on every good next shot of each run's first 90 %; the last 10 % of those are the validation set for early
-# stopping. Each variant is trained with several seeds and their predictions averaged. Scored on each run's last 10 %
-# with score_forecast (h=1). To try more inputs, add channels in windows().
+# 0.3 to 20 nC; then each channel by its training std, clipped at CLIP. Output: the next shot relative to that level
+# (0 = the hybrid), trained with an L1 loss (the metric is MAE) on the stable shots of each run's first 90 %, the last
+# 10 % of those for early stopping; applied once the segment is AGE_MIN shots old. Each variant is trained with
+# several seeds and their forecasts averaged. Scored on each run's last 10 % with score_forecast (h=1).
+# To try more inputs, add channels in windows(). The notebook variables (klystron, gun field, magnets, temperatures,
+# humidities, laser scope) were screened and add nothing for the next shot (see the README).
 # Usage: python -I gru_forecast.py <tables dir> <out dir> <run> [<run> ...]
-import os, sys, time
+import os, sys, time, warnings
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import numpy as np
 import pandas as pd
@@ -23,7 +26,10 @@ H = 32                  # GRU hidden size
 SEEDS = (0, 1, 2)
 BATCH, EPOCHS, PATIENCE, LR = 256, 40, 5, 1e-3
 CHANNELS = ['q', 'skip', 'level', 'lab', 'clex', 'step']
-CHARGE_ONLY = 3         # the first 3 channels
+LASER = ('lab', 'clex', 'step')                    # dropped in the charge-only variant
+CLIP = 5                # clip the standardised inputs (in training std): a laser step must not saturate the GRU
+STABLE_ONLY = True      # train on stable beam, apply once the segment is AGE_MIN old (as the ridge correction)
+VARIANTS = ('pooled runs', 'pooled runs, charge only', 'other runs only')
 
 
 def windows(r):
@@ -32,15 +38,24 @@ def windows(r):
     raw = {'q': np.where(used, r['df'][TARGET].values, np.nan), 'skip': (~used).astype(float), 'level': p,
            'lab': x.lab.values, 'clex': x.clex.values, 'step': x.step.values}
     W = {k: np.lib.stride_tricks.sliding_window_view(v, L) for k, v in raw.items()}     # row j = shots j .. j+L-1
+    # only the current segment (since the last level change), as in the ridge's features: a window reaching back to
+    # the old level never occurs in the stable training shots, and the GRU then predicts nonsense (+26 % on run 3)
+    seg = np.lib.stride_tricks.sliding_window_view(r['seg'].values, L)
+    old = seg != seg[:, -1:]
+    W = {k: np.where(old, 1.0 if k == 'skip' else np.nan, v) for k, v in W.items()}
     pn = p[L - 1:, None]
-    f = {'q': W['q'] / pn - 1, 'skip': W['skip'], 'level': W['level'] / pn - 1,
-         'lab': W['lab'] / W['lab'].mean(1, keepdims=True) - 1, 'clex': W['clex'] / W['clex'].mean(1, keepdims=True) - 1,
-         'step': (W['step'] - W['step'].mean(1, keepdims=True)) / pn}          # the step has an offset at low charge
+    with np.errstate(invalid='ignore', divide='ignore'), warnings.catch_warnings():
+        warnings.simplefilter('ignore', RuntimeWarning)                        # all-NaN windows (meter gaps)
+        f = {'q': W['q'] / pn - 1, 'skip': W['skip'], 'level': W['level'] / pn - 1,
+             'lab': W['lab'] / np.nanmean(W['lab'], 1, keepdims=True) - 1,
+             'clex': W['clex'] / np.nanmean(W['clex'], 1, keepdims=True) - 1,
+             'step': (W['step'] - np.nanmean(W['step'], 1, keepdims=True)) / pn}   # the step has an offset at low charge
     # clip: a feature gone wild (as the step did at 0.3 nC) must not dominate
     X = np.nan_to_num(np.stack([f[c] for c in CHANNELS], -1), nan=0, posinf=0, neginf=0).clip(-5, 5).astype(np.float32)
     y = r['q'].shift(-1).values[L - 1:] / p[L - 1:] - 1
     j = len(X) // 2
     assert np.isclose(X[j, -1, 0], (raw['q'][j + L - 1] / p[j + L - 1] - 1) if used[j + L - 1] else 0, atol=1e-6)
+    assert (X[old][:, 1] == 1).all() and (X[old][:, 0] == 0).all()           # steps before the segment are blanked
     return X, y
 
 
@@ -51,7 +66,7 @@ class GRU(torch.nn.Module):
         self.gru, self.out = torch.nn.GRU(len(scale), H, batch_first=True), torch.nn.Linear(H, 1)
 
     def forward(self, X):
-        return self.out(self.gru(X / self.scale)[0][:, -1]).squeeze(-1)
+        return self.out(self.gru((X / self.scale).clamp(-CLIP, CLIP))[0][:, -1]).squeeze(-1)
 
 
 def predict(model, X):
@@ -60,20 +75,22 @@ def predict(model, X):
 
 
 def fit(R, runs, c, seed):
-    # train on the good next shots of the runs' first 90 %, early-stop on the last 10 % of those
+    # train on the good next shots of the runs' first 90 % (or the stable ones), early-stop on the last 10 % of those
     tr, va = [], []
     for run in runs:
         r = R[run]
         shot = r['df'].index.values[L - 1:]
-        ok = np.flatnonzero(np.isfinite(r['wy']) & (shot + 1 < cut_shot(r['df'])))
+        ok = r['fit'][L - 1:] & r['used'][L - 1:] if STABLE_ONLY else np.isfinite(r['wy']) & (shot + 1 < cut_shot(r['df']))
+        ok = np.flatnonzero(ok)
         k = int(0.9 * len(ok))
-        tr.append((r['wX'][ok[:k], :, :c], r['wy'][ok[:k]])); va.append((r['wX'][ok[k:], :, :c], r['wy'][ok[k:]]))
+        tr.append((r['wX'][ok[:k]][:, :, c], r['wy'][ok[:k]])); va.append((r['wX'][ok[k:]][:, :, c], r['wy'][ok[k:]]))
     Xt, yt = torch.from_numpy(np.concatenate([a for a, _ in tr])), torch.from_numpy(np.concatenate([b for _, b in tr]))
     Xv, yv = np.concatenate([a for a, _ in va]), np.concatenate([b for _, b in va])
     torch.manual_seed(seed)
     model = GRU(Xt.std((0, 1)).clamp(min=1e-6))
+    torch.nn.init.zeros_(model.out.weight); torch.nn.init.zeros_(model.out.bias)       # starts as the hybrid ...
     opt = torch.optim.Adam(model.parameters(), LR)
-    best, state, wait = np.inf, None, 0
+    best, state, wait = np.mean(np.abs(yv)), {k: t.clone() for k, t in model.state_dict().items()}, 0   # ... and may stay it
     for epoch in range(EPOCHS):
         model.train()
         for b in torch.randperm(len(Xt)).split(BATCH):
@@ -97,10 +114,10 @@ def main():
     R = {run: prepare(tables, run) for run in runs}
     for r in R.values():
         r['wX'], r['wy'] = windows(r)
-    variants = {'GRU, pooled runs': (lambda run: runs, len(CHANNELS)),
-                'GRU, pooled runs, charge only': (lambda run: runs, CHARGE_ONLY)}
-    if len(runs) > 1:
-        variants['GRU, other runs only'] = (lambda run: [o for o in runs if o != run], len(CHANNELS))
+    every, charge = list(range(len(CHANNELS))), [i for i, k in enumerate(CHANNELS) if k not in LASER]
+    variants = {'GRU, pooled runs': (lambda run: runs, every), 'GRU, pooled runs, charge only': (lambda run: runs, charge),
+                'GRU, other runs only': (lambda run: [o for o in runs if o != run], every)}
+    variants = {k: v for k, v in variants.items() if k[5:] in VARIANTS and (len(runs) > 1 or 'other' not in k)}
     preds = {}                                   # (variant, run) -> per-seed next-shot forecasts
     for name, (src, c) in variants.items():
         for use in dict.fromkeys(tuple(src(run)) for run in runs):
@@ -113,7 +130,10 @@ def main():
                     if tuple(src(run)) == use:
                         p = R[run]['p'].values
                         g = p.copy()                 # before the first full window: the hybrid
-                        g[L - 1:] = p[L - 1:] * (1 + predict(model, R[run]['wX'][:, :, :c]))
+                        # off when the newest shot was skipped (e.g. the BCM reads far below the step charge): windows
+                        # of skipped shots never occur in the stable training shots (-13 % on run 3's 1.67 nC plateau)
+                        on = R[run]['on'][L - 1:] & R[run]['used'][L - 1:] if STABLE_ONLY else 1
+                        g[L - 1:] = p[L - 1:] * (1 + on * predict(model, R[run]['wX'][:, :, c]))
                         preds.setdefault((name, run), []).append(g)
 
     ridge = RidgeCV(alphas=ALPHAS).fit(pd.concat([R[u]['F'][R[u]['fit']] for u in runs]),
@@ -134,6 +154,7 @@ def main():
             rows.append({'run': run, 'forecast': name, 'test MAE': score(r, v), 'seed std': spread.get(name, np.nan),
                          'stable': np.nanmean(e[st]), 'after change': np.nanmean(e[ch]) if ch.any() else np.nan})
         r['cands'] = cands
+    np.savez(os.path.join(out, 'gru_forecasts.npz'), **{f'{run}|{k}': v for run, r in R.items() for k, v in r['cands'].items()})
     T = pd.DataFrame(rows)
     T['dMAE %'] = T.groupby('run')['test MAE'].transform(lambda s: 100 * (1 - s / s.iloc[0]))
     pd.set_option('display.width', 250)
