@@ -119,3 +119,27 @@ The forecast is the mean of the good shots since the last level change, capped a
   recovering from its stuck state, and swings of 3–12 nC at shots 5000–5800 while the laser stays flat.
 - **No method can predict the first shot at a new level.** Nothing before that shot shows the change, so the
   hybrid catches up one shot later.
+
+## Second run: 2026-10-08_21-11-47 (`results/2026-10-08_21-11-47/`)
+
+- **What the run looks like:** 20 000 shots, 5–6 nC throughout, with no stuck BCM and no laser steps. The lab laser
+  drifts in slow sawtooth cycles every ~1500–3000 shots (9.5 → 12.5 uJ), and the charge follows it. One RF trip at
+  shot ~12100 gives 76 dropouts.
+- **Test region:** the last 2000 shots are all stable, with no level change.
+
+| Next-shot forecast | run 1 (09_07) test MAE | run 2 (08_21) test MAE |
+|---|---|---|
+| 9-shot mean (baseline) | 0.505 | 0.144 |
+| 3-shot mean | 0.396 (−22 %) | 0.155 (+7 %) |
+| 20-shot mean | 0.656 (+30 %) | 0.141 (−2 %) |
+| ridge | 0.405 (−20 %) | **0.139 (−3.6 %)** |
+| hybrid, tuned on its own run | **0.352 (−30 %)** (z = 5, wmax = 9) | 0.141 (−2 %) (z = 6, wmax = 20) |
+| hybrid, z = 6, wmax = 20 on both | 0.348 (−31 %) | 0.141 (−2 %) |
+
+- **One hybrid setting (z = 6, wmax = 20) works on both runs.**
+  - It is the best forecast on run 1, where level changes dominate.
+  - On calm run 2 it is the 20-shot mean, about 2 % better than the baseline.
+- **The ridge does best on calm beam.** It uses the long means and the latest lab reading. On run 1 it loses
+  because one linear fit has to cover both regimes.
+- **The stable-beam residuals have the same shape as in run 1:** 3.35 % rms relative, skew −0.11, excess kurtosis +1.0.
+- **Next step:** the hybrid for level changes plus a ridge-style laser correction on stable beam.
