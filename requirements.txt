@@ -7,3 +7,4 @@ pandas
 pyarrow
 scikit-learn
 scipy
+torch

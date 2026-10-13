@@ -10,56 +10,17 @@
 # score_forecast, and on the stable shots of the whole run.
 # Usage: python -I hybrid_forecast.py <tables dir> <run> [<plot.png>]
 import itertools, os, sys
-from collections import deque
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import numpy as np
 import pandas as pd
 from nbfuncs import TARGET, cut_shot, rolling_baseline, score_forecast, scored_shots
+from forecasters import hybrid
 from run_data import level_labels, load_run
 
 MODES = ['charge', 'charge+laser', 'charge x2']
 ZS = [3, 4, 5, 6, 8]
 WMAXES = [9, 20, 30, 50, 100]
-DROP = -0.7                    # an unconfirmed fall by more than this (relative) is a dropout, not a level change
 
-
-def hybrid(Q, lab, step_med, mode, z, wmax, sig_q, sig_l):
-    # -> forecast for shot i+1 made after shot i (same index as Q), and whether shot i started a new segment
-    pred, new = np.full(len(Q), np.nan), np.zeros(len(Q), bool)
-    buf, sq, sl, cand = deque(), 0.0, 0.0, []
-    last = np.nan
-    for i, (qi, li, si) in enumerate(zip(Q, lab, step_med)):
-        ok = np.isfinite(qi) and not (si > 1 and qi < 0.5 * si)          # BCM stuck low while the beam is there
-        if ok and buf:
-            m, ml = sq / len(buf), sl / len(buf)
-            rq, rl = qi / m - 1, li / ml - 1
-            big = abs(rq) > z * sig_q
-            if mode == 'charge':
-                change = big
-            elif mode == 'charge+laser':
-                change = big and abs(rl) > z * sig_l and np.sign(rl) == np.sign(rq)
-            else:                                                       # two in a row, same direction
-                change = big and bool(cand) and np.sign(cand[-1] / m - 1) == np.sign(rq)
-                cand = [qi] if big and not change else []
-            if change:
-                start = ([cand[-1]] if mode == 'charge x2' and cand else []) + [qi]
-                buf, sq, sl = deque(zip(start, [li] * len(start))), sum(start), li * len(start)
-                new[i] = True
-                ok = False                                              # already in the new segment
-            elif big and (mode == 'charge x2' or rq < DROP):
-                ok = False                                              # held back: a candidate or a dropout
-        if ok:
-            buf.append((qi, li)); sq += qi; sl += li
-            if len(buf) > wmax:
-                a, b = buf.popleft(); sq -= a; sl -= b
-        if buf:
-            last = sq / len(buf)
-        pred[i] = last
-    return pred, new
-
-
-assert np.allclose(hybrid(np.r_[np.ones(5), 3 * np.ones(3)], np.r_[np.ones(5), 3 * np.ones(3)], np.zeros(8),
-                          'charge+laser', 4, 9, 0.03, 0.03)[0], [1, 1, 1, 1, 1, 3, 3, 3])
 
 df, x, bcm_bad, good = load_run(sys.argv[1], sys.argv[2])
 Q = df[TARGET]
@@ -97,7 +58,7 @@ for name, p in ref.items():
     rows.append({'model': name, 'train MAE': train_mae(p), 'test MAE': score_forecast(df, as_pred(p)).MAE[1], 'p': p})
 for mode in MODES:
     (_, z, w), _ = min(((k, v) for k, v in grid.items() if k[0] == mode), key=lambda kv: kv[1])
-    p, new = hybrid(*args, mode, z, w, sig_q, sig_l)
+    p, new, _ = hybrid(*args, mode, z, w, sig_q, sig_l)
     best_pred[mode] = (p, new)
     rows.append({'model': f'hybrid, {mode} (z={z}, wmax={w})', 'train MAE': grid[(mode, z, w)],
                  'test MAE': score_forecast(df, as_pred(p)).MAE[1], 'p': p, 'changes': int(new.sum()),
