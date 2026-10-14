@@ -2,7 +2,8 @@
 
 Download a run's HDF5 chunks, reduce them to per-shot tables, and score next-shot forecasts against the
 challenge baseline, the mean of the last 9 good shots. The split is chronological: train on the first 90 % of the run,
-test on the last 10 %. Results for run 2026-10-09_07-46-07 are in `../results/2026-10-09_07-46-07/`.
+test on the last 10 %. Only the chunks kept in `../config/CLEAN_CUTS.toml` are used (below). Results per run are in
+`../results/<run>/`.
 
 ```bash
 pip install -r requirements.txt
@@ -19,8 +20,8 @@ PY=python3 scripts/run_pipeline.sh 2026-10-09_07-46-07 data/h5 data/tables resul
 | `nbfuncs.py` | Kickoff-notebook functions: scoring rules, dropouts, rolling baseline, safe pickle loader |
 | `pulses.py` | Puts every reading on the 1.2 s pulse grid (see below) |
 | `beam_loading_step.py` | `step()`: the beam-loading dip on the gun pickup PGLA, a second charge measurement |
-| `plot_run.py` | Whole-run overview: BCM charge, step charge, laser, gun field |
-| `run_data.py` | Loads one run's tables onto the pulse grid; shared shot labels (BCM-wrong, stable, level change) |
+| `plot_run.py` | Whole-run overview: BCM charge, step charge, laser, gun field; discarded chunks shaded red |
+| `run_data.py` | Loads one run's tables onto the pulse grid, keeps only the clean chunks; shared shot labels (BCM-wrong, stable, level change) |
 | `forecast_run.py` | Forecast scores for horizons 1–50, the next-shot plot and the stable-shot residuals |
 | `forecasters.py` | `hybrid()`: the level-change-aware mean, shared by the two scripts below |
 | `hybrid_forecast.py` | Tunes and scores the hybrid on one run |
@@ -36,6 +37,19 @@ columns are left out.
 
 ## Things the data does that matter
 
+- **Clean chunks only.** `run_data.clean_run` applies `../config/CLEAN_CUTS.toml`, the team's visual inspection of
+  BCM_GUN. Every forecasting script loads its data through it.
+  - Each run is trimmed to its first to last kept chunk. The test region is the last 10 % of that span.
+  - Discarded chunks in between lose their BCM reading: they count as dropouts, are never trained on or scored, and no
+    forecast averages across them.
+  - What goes:
+    - run 1 (09_07) chunks 41–86 (stuck BCM, laser scan) and 107–109 (most of the 19 nC / 1 nC level changes);
+    - run 3 (08_00) chunks 194–254 (the 0.3 nC part);
+    - run 4 (07_21) chunks 0–10 (the early steps);
+    - run 5 (08_15) chunks 2–3 and 75.
+  - **So every test region is now stable beam,** except the last 7 shots of run 1 (below). The ~30 % gains that
+    earlier versions of this README reported on runs 1 and 3 came from the level changes that are now cut; they are
+    in the git history.
 - **Pulse grid.** The machine fires every 1.2 s, but acquisition skips pulses, so rows are 1.2, 2.4 or 3.6 s apart.
   `pulses.align` puts each reading on its true pulse.
 - **Laser meters.** A reading belongs to the previous pulse if it was read less than 2.2 s after the trigger, and to
@@ -46,33 +60,37 @@ columns are left out.
 - **Beam-loading step.** PGLA mean(620–631) − mean(637–655) = 0.89 a.u. per nC. It is linear from 0.3 to 10.4 nC
   and matches the BCM within ~3 %.
 - **The BCM is sometimes wrong.** It sits at a 1.67 nC ceiling in run 06_21-57-43, and stays stuck near 0 in parts
-  of 09_07-46-07 and 09_11-48-33, while the beam-loading step sees full charge. `forecast_run.py` keeps these shots
-  out of training (in this run, 2415 shots between shots 5000 and 8650).
+  of 09_07-46-07 and 09_11-48-33, while the beam-loading step sees full charge. Those stretches are in discarded
+  chunks; the stuck-BCM check (`run_data.load_run`) still keeps the few remaining such shots out of training.
 - **Missing readings.** After pulse alignment, ~10 % of lab/clex readings and 13–36 % of step readings have no pulse
   of their own (mostly 1–2-shot gaps, up to 48). `run_data.load_run` carries the last reading forward.
   - It used to interpolate. That filled shot n partly from shot n+1: a future leak into every laser and step
     feature, and fake ramps after jumps.
   - Fixing it cost the forecasts 0.001–0.003 nC. All numbers below are after the fix.
+- **Correlations that come from dropouts.** Notebook 07_02 found the klystron amplitude (PKI15A) at r = 0.44 with the
+  charge jitter in run 2. That is the RF trip at shot ~12 100: charge and klystron collapse together, and a 51-shot
+  detrend does not remove a one-shot collapse. With all shots r = 0.40; without the 76 trip shots r = −0.03. On the
+  pulse grid, klystron, reflected power and gun field have |r| ≤ 0.06 on every run. Drop dropouts before correlating.
 
-## Results: run 2026-10-09_07-46-07, next shot (h = 1), test region = last 1096 shots
+## Results: run 2026-10-09_07-46-07, next shot (h = 1), test region = last 1070 shots (9630–10699)
 
 | Forecast | MAE (nC) | vs baseline |
 |---|---|---|
-| mean of last 9 good shots (baseline) | 0.505 | |
-| mean of last 3 good shots (window picked on train) | **0.396** | −22 % |
-| ridge: past charge + laser meters + beam-loading step | 0.426 | −16 % |
+| mean of last 9 good shots (baseline) | 0.3430 | |
+| mean of last 20 good shots (window picked on train) | 0.3328 | −3.0 % |
+| mean of last 3 good shots | 0.3390 | −1.2 % |
+| ridge: past charge + laser meters + beam-loading step | **0.3312** | −3.4 % |
 
-- **The test region has two level changes**, made by the operators: at ~shot 10700 the laser goes up to 40 uJ
-  (19 nC), then down to 5 uJ (1 nC). Most of the gain is faster recovery after these changes.
-  - The ridge reaches the new level one shot after the change, because the last laser reading already shows it.
-  - Means need about W shots.
-- **On the 1005 steady shots:** 9-shot mean 0.383, 3-shot mean 0.359, ridge 0.374.
-- **On chunks at 5 nC** the jitter is nearly white, and nothing causal beats the 9-shot mean.
-- **Longer horizons:** the ridge loses to the baseline from h = 10 on.
-- Plots: `run_overview.png` (the whole run), `next_shot.png` (predicted vs actual next shot),
+- **The test region is ~10 nC stable beam, apart from its last 7 shots.** The clean span ends at chunk 106, just as the
+  operators change the laser: the charge goes 10 → 5 → 4 → 1 → 18 nC over shots 10692–10699. The beam-loading step
+  confirms these readings.
+  - These shots carry 10 % of the baseline's summed error, and 5 % of the hybrid's.
+- **On the 1063 stable test shots:** 9-shot mean 0.3096, 20-shot mean 0.3023, ridge about the same.
+- **Longer horizons:** the ridge gains 3–4 % up to h = 10 and nothing from h = 20 on.
+- Plots: `run_overview.png` (the whole run, discarded chunks red), `next_shot.png` (predicted vs actual next shot),
   `residuals_stable.png` (residuals on stable shots, below).
 
-### Next-shot residuals on stable beam (`residuals_stable.png`, whole run, 6257 shots)
+### Next-shot residuals on stable beam (`residuals_stable.png`, clean run, 6083 shots)
 
 A shot counts as stable if all of these hold:
 - it is not a dropout and the BCM is not stuck;
@@ -82,25 +100,16 @@ A shot counts as stable if all of these hold:
 
 The ridge here is out-of-fold over 10 contiguous blocks.
 
-| Forecast | ~5.5 nC: std / MAE (nC) | ~10 nC: std / MAE (nC) | relative std | skew | excess kurtosis (relative) |
+| Forecast | ~5.5 nC: std / MAE (nC) | ~10 nC: std / MAE (nC) | relative std | skew at 5.5 nC | excess kurtosis at 5.5 nC |
 |---|---|---|---|---|---|
-| 9-shot mean | 0.176 / 0.135 | 0.380 / 0.300 | 3.4 % | −0.20 | +1.0 |
-| 3-shot mean | 0.182 / 0.141 | 0.403 / 0.317 | 3.6 % | −0.15 | +0.9 |
-| ridge | 0.194 / 0.150 | 0.428 / 0.337 | 3.9 % | −0.22 | +0.9 |
+| 9-shot mean | 0.173 / 0.134 | 0.399 / 0.302 | 3.4 % | −0.16 | +0.9 |
+| 20-shot mean | 0.170 / 0.132 | 0.395 / 0.298 | 3.4 % | −0.13 | +0.9 |
+| ridge | 0.171 / 0.133 | 0.401 / 0.305 | 3.4 % | −0.17 | +0.9 |
 
-- **On stable beam the 9-shot mean is the best of the three.** The 3-shot mean and the ridge only win at level
-  changes.
-  - The best window on stable beam is 20–50 shots, and it is only ~2 % better than 9.
-  - The jitter about the local level is nearly white (lag-1 r = 0.14).
-- **The distribution is close to Gaussian in the core, with heavier tails and a small negative skew.**
-  - Skew is −0.2 ± 0.03: occasional low shots, more than high ones.
-  - Excess kurtosis is ~+1 relative to the level. In nC it is +2.5, because pooling the 5.5 and 10 nC levels mixes
-    two widths.
-  - The Q-Q plot follows the Gaussian to about ±2σ. The tails reach −6σ and +5σ.
-- **The jitter grows with charge:** 3.2 % rms of the level at 5.5 nC and 3.8 % at 10 nC.
-- **Implication for next-shot forecasting:** use a long mean on stable beam and react fast at level changes,
-  for example when the last laser reading jumps.
-- **One run only.** Scores on other runs will depend on what happens in their last 10 %.
+- **On stable beam all three are within ~2 %.** The best window is 20–50 shots.
+- **The jitter is close to Gaussian at 5.5 nC,** with slightly heavier tails and a small negative skew. The 10 nC
+  part has much heavier tails (excess kurtosis ~15) from the few low shots before the final level change.
+- **The jitter grows with charge:** 3.2 % rms of the level at 5.5 nC and 3.9 % at 10 nC.
 
 ## Hybrid next-shot forecaster (`hybrid_forecast.py`, `hybrid.txt`, `hybrid_next_shot.png`)
 
@@ -112,23 +121,20 @@ The forecast is the mean of the good shots since the last level change, capped a
 - **Causal:** the official dropout labels are used only for scoring.
 - **Tuning:** z and wmax are tuned on the first 90 %.
 
-| Next-shot forecast | test MAE (nC) | vs baseline | test, stable | test, after a change | whole run, stable ~5.5 / ~10 nC |
-|---|---|---|---|---|---|
-| 9-shot mean (baseline) | 0.505 | | 0.287 | 1.88 | 0.135 / 0.300 |
-| 3-shot mean | 0.396 | −22 % | 0.306 | 0.83 | 0.141 / 0.317 |
-| ridge (`forecast_run.py`) | 0.426 | −16 % | | | 0.150 / 0.337 |
-| **hybrid, charge only (z = 5, wmax = 9)** | **0.354** | **−30 %** | 0.287 | 0.83 | 0.134 / 0.300 |
-| hybrid, laser must confirm (z = 4, wmax = 9) | 0.423 | −16 % | 0.287 | 0.99 | 0.136 / 0.300 |
-| hybrid, two shots in a row (z = 3, wmax = 9) | 0.403 | −20 % | 0.285 | 1.28 | 0.134 / 0.299 |
+| Next-shot forecast, run 1 | test MAE (nC) | vs baseline | test, stable | whole run, stable ~5.5 / ~10 nC |
+|---|---|---|---|---|
+| 9-shot mean (baseline) | 0.3430 | | 0.3096 | 0.134 / 0.302 |
+| 3-shot mean | 0.3390 | −1.2 % | 0.3330 | 0.141 / 0.321 |
+| 20-shot mean | 0.3328 | −3.0 % | 0.3023 | 0.132 / 0.298 |
+| **hybrid, charge only (z = 6, wmax = 30)** | **0.3127** | **−8.9 %** | 0.2994 | 0.132 / 0.295 |
+| hybrid, laser must confirm (z = 6, wmax = 30) | 0.3202 | −6.7 % | 0.2994 | 0.132 / 0.295 |
+| hybrid, two shots in a row (z = 4, wmax = 30) | 0.3354 | −2.2 % | 0.2999 | 0.132 / 0.295 |
 
-- **The hybrid matches the long mean on stable beam and the 3-shot mean after changes**, and beats both overall.
-- **Robust to tuning:** test MAE stays between 0.347 and 0.357 nC for every z ≥ 4 and every wmax from 9 to 100.
-  - Training picks wmax = 9 because the training part contains a slow laser scan, and a slow ramp never
-    triggers a change.
-  - On stable beam alone, wmax = 20–50 is ~2 % better.
-- **The laser does not help.** Requiring the laser to confirm makes both scores worse (test 0.423 vs 0.354 nC,
-  training 0.266 vs 0.232). Before the interpolation fix it looked neutral on test, thanks to the leak. In training, the charge also changes without the laser: the BCM
-  recovering from its stuck state, and swings of 3–12 nC at shots 5000–5800 while the laser stays flat.
+- **The hybrid matches the 20–50-shot mean on stable beam and reacts within a shot at the final level change.**
+  Most of its gain over the 20-shot mean is those last 7 shots.
+- **Robust to tuning:** test MAE stays between 0.312 and 0.318 nC for every z ≥ 4 and wmax from 20 to 100.
+- **The laser does not help.** At shot 10693 the charge fell to 5 nC while the lab reading stayed at 9.7 uJ, so
+  requiring the laser to confirm misses the change.
 - **No method can predict the first shot at a new level.** Nothing before that shot shows the change, so the
   hybrid catches up one shot later.
 
@@ -136,60 +142,52 @@ The forecast is the mean of the good shots since the last level change, capped a
 
 - **What the run looks like:** 20 000 shots, 5–6 nC throughout, with no stuck BCM and no laser steps. The lab laser
   drifts in slow sawtooth cycles every ~1500–3000 shots (9.5 → 12.5 uJ), and the charge follows it. One RF trip at
-  shot ~12100 gives 76 dropouts.
+  shot ~12100 gives 76 dropouts. All chunks are kept.
 - **Test region:** the last 2000 shots are all stable, with no level change.
 
 | Next-shot forecast | run 1 (09_07) test MAE | run 2 (08_21) test MAE |
 |---|---|---|
-| 9-shot mean (baseline) | 0.505 | 0.144 |
-| 3-shot mean | 0.396 (−22 %) | 0.155 (+7 %) |
-| 20-shot mean | 0.656 (+30 %) | 0.141 (−2 %) |
-| ridge | 0.426 (−16 %) | **0.1395 (−3.2 %)** |
-| hybrid, tuned on its own run | 0.354 (−30 %) (z = 5, wmax = 9) | 0.141 (−2 %) (z = 6, wmax = 20) |
-| hybrid, z = 6, wmax = 20 on both | **0.350 (−31 %)** | 0.141 (−2 %) |
+| 9-shot mean (baseline) | 0.3430 | 0.144 |
+| 3-shot mean | 0.3390 (−1.2 %) | 0.155 (+7 %) |
+| 20-shot mean | 0.3328 (−3.0 %) | 0.141 (−2 %) |
+| ridge | 0.3312 (−3.4 %) | **0.1395 (−3.2 %)** |
+| hybrid, tuned on its own run | 0.3127 (−8.9 %) (z = 6, wmax = 30) | 0.141 (−2 %) (z = 6, wmax = 20) |
+| hybrid, z = 6, wmax = 20 on both | **0.3156 (−8.0 %)** | 0.141 (−2 %) |
 
-- **One hybrid setting (z = 6, wmax = 20) works on both runs.**
-  - It is the best forecast on run 1, where level changes dominate.
-  - On calm run 2 it is the 20-shot mean, about 2 % better than the baseline.
-- **The ridge does best on calm beam.** It uses the long means and the latest lab reading. On run 1 it loses
-  because one linear fit has to cover both regimes.
+- **One hybrid setting (z = 6, wmax = 20) works on both runs.** On calm run 2 it is the 20-shot mean, about 2 %
+  better than the baseline.
+- **The ridge does best on calm beam.** It uses the long means and the latest lab reading.
 - **The stable-beam residuals have the same shape as in run 1:** 3.35 % rms relative, skew −0.11, excess kurtosis +1.0.
-- **Next step:** the hybrid for level changes plus a ridge-style laser correction on stable beam.
 
 ## Third run: 2026-10-08_00-08-19 (`results/2026-10-08_00-08-19/`)
 
-- **What the run looks like:** 25 500 shots.
-  - Shots 0–19 400: 4–6 nC, following slow lab-laser drifts (9–12 uJ).
-  - Then the laser drops to 4 uJ and the charge to ~0.3 nC for the rest of the run.
-  - At 0.3 nC the beam-loading step reads ~0 nC (an offset), so it is no use as a charge check there.
-  - 176 dropouts and 76 BCM-wrong shots.
-- **Test region (last 2550 shots):** mostly 0.2–0.35 nC, with short steps to 1.2, 1.7, 3 and 5.4 nC. 328 of the
-  2459 scored shots are within 20 shots after a change.
+- **What the run looks like:** the clean span is shots 0–19 399, at 4–6 nC, following slow lab-laser drifts
+  (9–12 uJ). 5 dropouts and 5 BCM-wrong shots.
+  - The rest of the run (0.3 nC, laser at 4 uJ, with short steps up to 5.4 nC) is discarded by the cuts.
+- **Test region (shots 17 460–19 399):** 4.4–5.3 nC; 1924 of the 1939 scored shots are stable, with no level change.
 
 | Next-shot forecast, run 3 test region | MAE (nC) |
 |---|---|
-| 9-shot mean (baseline) | 0.0702 |
-| last shot | 0.0469 (−33 %) |
-| 3-shot mean | 0.0502 (−29 %) |
-| ridge (`forecast_run.py`) | 0.1119 (+59 %) |
-| hybrid, z = 6, wmax = 20 (also what run 3's own tuning picks) | 0.0494 (−30 %) |
+| 9-shot mean (baseline) | 0.1414 |
+| last shot | 0.1770 (+25 %) |
+| 3-shot mean | 0.1497 (+5.9 %) |
+| 20-shot mean (window picked on train) | 0.1388 (−1.9 %) |
+| **ridge (`forecast_run.py`)** | **0.1353 (−4.3 %)** |
+| hybrid, z = 6, wmax = 20 (also what run 3's own tuning picks) | 0.1392 (−1.6 %) |
 
-- **The hybrid setting holds on a third run.** Tuned on run 3's training part alone, it picks z = 6, wmax = 20
-  again.
-- **The last shot alone is slightly better here (0.0469).** At 0.3 nC the jitter has more memory: lag-1
-  autocorrelation is +0.26, against ~0.14 at 5–10 nC. The level changes also favour short memory.
-- **The `forecast_run.py` ridge fails** because it predicts in nC with one fit across 5 nC and 0.3 nC. The
-  combined forecaster's relative correction does not have this problem.
+- **Run 3 now looks like run 2:** calm 5 nC beam, lag-1 autocorrelation of the jitter +0.13, and the ridge is best.
+- **Before the cuts** the test region was the 0.3 nC part. There the last shot was best (lag-1 +0.26), and the
+  nC ridge failed (+59 %) because one fit spanned 5 nC and 0.3 nC. The combined forecaster's relative correction was
+  built to avoid that.
 
 ## Runs 4 and 5: 2026-10-07_21-43-26 and 2026-10-08_15-42-27 (low charge)
 
-These two runs are the other runs the team marked clean in `config/CLEAN_CUTS.toml`. Everything was tested on them
-frozen: settings and features chosen on runs 1–3.
-- **Run 4 (07_21-43-26):** 7127 shots.
-  - Steps between 0.05 and 1.7 nC in the first ~1100 shots, then a quiet ~0.2 nC to the end.
-  - The test region (713 shots) is all stable, with no level change.
-  - The jitter is 7.4 % of the level (3–4 % at 5–10 nC).
-- **Run 5 (08_15-42-27):** 12 100 shots at 0.05–0.2 nC, with steps and slow swings.
+Everything was tested on these runs frozen: settings and features chosen on runs 1–3.
+- **Run 4 (07_21-43-26):** the clean span is shots 1100–7126 (chunks 11–71), a quiet ~0.2 nC.
+  - The test region (603 shots) is all stable, with no level change.
+  - The jitter is 7.7 % of the level (3–4 % at 5–10 nC).
+- **Run 5 (08_15-42-27):** 12 100 shots at 0.05–0.2 nC, with steps and slow swings; 300 shots discarded,
+  363 dropouts.
   - The lab laser stays flat (3.6–3.7 uJ) while the charge swings. The gun field moves from 1566 to 1577 in the second
     half, so here the charge may follow the RF rather than the laser.
   - Only 480 of the 1210 test shots count as stable; the rest drift. The jitter is 11.9 % of the level.
@@ -197,15 +195,16 @@ frozen: settings and features chosen on runs 1–3.
 
 | Next-shot test MAE (nC) | run 4 (07_21) | run 5 (08_15) |
 |---|---|---|
-| 9-shot mean (baseline) | 0.0198 | 0.0122 |
-| 20-shot mean | 0.0189 (−4.4 %) | 0.0119 (−2.5 %) |
-| ridge (`forecast_run.py`) | 0.0212 (+6.8 %) | 0.0118 (−3.5 %) |
-| hybrid, z = 6, wmax = 20 | 0.0193 (−2.6 %) | 0.0119 (−2.5 %) |
-| hybrid, tuned on its own run | 0.0200 (+0.8 %) (z = 4, wmax = 30) | 0.0119 (−2.6 %) (z = 8, wmax = 30) |
+| 9-shot mean (baseline) | 0.0195 | 0.0122 |
+| 20-shot mean | 0.0187 (−4.0 %) | 0.0119 (−2.5 %) |
+| 50-shot mean (window picked on train) | 0.0182 (−6.7 %) | 0.0119 (−2.5 %) |
+| **ridge (`forecast_run.py`)** | **0.0179 (−8.1 %)** | **0.0118 (−3.5 %)** |
+| hybrid, z = 6, wmax = 20 | 0.0192 (−1.7 %) | 0.0119 (−2.5 %) |
+| hybrid, tuned on its own run | 0.0182 (−6.7 %) (z = 6, wmax = 50) | 0.0119 (−2.6 %) (z = 8, wmax = 30) |
 
-- **The hybrid transfers, but gains little here:** neither test region has a level change.
-- **Tuning on run 4's own training part goes wrong.** Its first 1100 shots are full of steps, so it picks z = 4. On
-  the quiet test region that fires 9 false level changes. The setting from runs 1–3 is safer.
+- **On quiet low-charge beam a longer mean helps.** At 8–12 % jitter, 20 shots is too short; run 4's own tuning
+  picks wmax = 50.
+- **The ridge is best on both.**
 
 ## Combined forecaster: hybrid + stable-beam correction (`combined_forecast.py`, `results/combined/`)
 
@@ -227,31 +226,27 @@ python3 -I scripts/combined_forecast.py data/tables results/combined 2026-10-09_
 
 | Next-shot test MAE (nC) | run 1 (09_07) | run 2 (08_21) | run 3 (08_00) | run 4 (07_21) | run 5 (08_15) |
 |---|---|---|---|---|---|
-| 9-shot mean (baseline) | 0.505 | 0.1442 | 0.0702 | 0.0198 | 0.0122 |
-| hybrid (z = 6, wmax = 20) | 0.350 (−30.7 %) | 0.1414 (−1.9 %) | 0.0494 (−29.7 %) | 0.0193 (−2.6 %) | 0.0119 (−2.5 %) |
-| ridge alone (`forecast_run.py`) | 0.426 (−15.7 %) | 0.1395 (−3.2 %) | 0.1119 (+59 %) | 0.0212 (+6.8 %) | 0.0118 (−3.5 %) |
-| combined, correction trained on its own run | 0.3464 (−31.4 %) | 0.1396 (−3.1 %) | 0.0491 (−30.0 %) | 0.0186 (−5.9 %) | 0.0119 (−2.8 %) |
-| **combined, correction trained on all 5 runs** | **0.3483 (−31.1 %)** | **0.1398 (−3.0 %)** | **0.0494 (−29.6 %)** | **0.0185 (−6.4 %)** | **0.0118 (−3.3 %)** |
-| combined, correction trained on the other 4 runs only | 0.3485 (−31.0 %) | 0.1399 (−3.0 %) | 0.0495 (−29.4 %) | 0.0185 (−6.5 %) | 0.0118 (−3.2 %) |
+| 9-shot mean (baseline) | 0.3430 | 0.1442 | 0.1414 | 0.0195 | 0.0122 |
+| hybrid (z = 6, wmax = 20) | 0.3156 (−8.0 %) | 0.1414 (−1.9 %) | 0.1392 (−1.6 %) | 0.0192 (−1.7 %) | 0.0119 (−2.5 %) |
+| ridge alone (`forecast_run.py`) | 0.3312 (−3.4 %) | 0.1395 (−3.2 %) | 0.1353 (−4.3 %) | 0.0179 (−8.1 %) | 0.0118 (−3.5 %) |
+| combined, correction trained on its own run | 0.3149 (−8.2 %) | 0.1396 (−3.1 %) | 0.1357 (−4.1 %) | 0.0184 (−5.5 %) | 0.0119 (−2.7 %) |
+| **combined, correction trained on all 5 runs** | **0.3163 (−7.8 %)** | **0.1399 (−3.0 %)** | **0.1371 (−3.0 %)** | **0.0183 (−5.9 %)** | **0.0119 (−3.0 %)** |
+| combined, correction trained on the other 4 runs only | 0.3165 (−7.7 %) | 0.1401 (−2.8 %) | 0.1377 (−2.7 %) | 0.0183 (−6.0 %) | 0.0119 (−2.8 %) |
 
-- **Frozen tests on runs 3, 4 and 5.** Hybrid settings and features were chosen on runs 1 and 2. Trained on the
-  other runs only, the correction scores −29 % on run 3, −6.5 % on run 4 and −3.2 % on run 5 against the baseline.
-  - On run 3 nearly all of the gain comes from the hybrid (0.0494).
-  - On run 4 the correction adds most of it (hybrid −2.6 %, combined −6.5 %).
-- **The combined forecaster is the best, or within 0.002 nC of the best, on all five runs.**
-- **Adding runs 4 and 5 to the training barely moves runs 1–3** (with runs 1–3 only: 0.3472 / 0.1397 / 0.0491).
-- **On stable test shots** the correction cuts the error by ~1 % on runs 1 and 2 (run 1: 0.280 vs 0.282 nC;
-  run 2: 0.1398 vs 0.1414) and by 4 % on run 4 (0.0185 vs 0.0193). After changes it leaves the hybrid unchanged.
-  - Before the interpolation fix this looked like 2–3 %, so about half of the apparent gain was the leak.
-- **What the correction uses most:** the 200- and 50-shot segment means, the latest lab reading and the 9-shot clex
+- **On these stable test regions the plain ridge is as good or better.** It is best on runs 2–4, and level on run 5.
+  The combined forecaster only wins on run 1, through the hybrid's response at the final level change.
+  - The ridge in `forecast_run.py` is fitted on its own run (in nC, with ~25 features). The combined correction
+    transfers: trained on the other runs only, it loses at most 0.0006 nC against training on the run itself.
+- **On stable test shots** the correction cuts the hybrid's error by 1–2 % on runs 2 and 3 (0.1399 vs 0.1414;
+  0.1370 vs 0.1392) and by 5 % on run 4 (0.0183 vs 0.0192). It does nothing on run 1 (0.3030 vs 0.3023).
+- **What the correction uses most:** the 200- and 50-shot segment means, the latest clex reading and the 9-shot lab
   mean.
-- **Two things were needed:**
+- **Two things were needed** (found on the full runs, before the cuts):
   - Train the correction on stable shots only. Trained on all shots, it learns to chase the last few shots from
     run 1's laser scan, and run 2 got worse.
   - Switch it off for the first 20 shots of a segment.
-- **A bug that run 3 caught.** At first the step features were relative to their own 200-shot mean. At 0.3 nC that
-  mean is ~0, so the features reached ~1000. The correction from runs 1+2 then raised run 3's stable error from 0.026
-  to 0.045 nC (test MAE 0.0628). Dividing by the charge level fixed it, and runs 1 and 2 did not change.
+- **A bug that run 3's 0.3 nC part caught** (before the cuts). At first the step features were relative to their own
+  200-shot mean. At 0.3 nC that mean is ~0, so the features reached ~1000. Dividing by the charge level fixed it.
 
 ## GRU sequence model (`gru_forecast.py`, `results/gru/`)
 
@@ -286,36 +281,41 @@ python3 -I scripts/screen_variables.py data/tables      # the notebook-variable 
 
 | Next-shot test MAE (nC) | run 1 (09_07) | run 2 (08_21) | run 3 (08_00) | run 4 (07_21) | run 5 (08_15) |
 |---|---|---|---|---|---|
-| 9-shot mean (baseline) | 0.505 | 0.1442 | 0.0702 | 0.0198 | 0.0122 |
-| hybrid (z = 6, wmax = 20) | 0.350 (−30.7 %) | 0.1414 (−1.9 %) | 0.0494 (−29.7 %) | 0.0193 (−2.6 %) | 0.0119 (−2.5 %) |
-| combined (hybrid + ridge), trained on all 5 runs | 0.3483 (−31.1 %) | 0.1398 (−3.0 %) | 0.0494 (−29.6 %) | 0.0185 (−6.4 %) | 0.0118 (−3.3 %) |
-| **GRU, pooled runs** | **0.3472 (−31.3 %)** | **0.1400 (−2.9 %)** | **0.0493 (−29.8 %)** | **0.0188 (−5.1 %)** | **0.0119 (−3.1 %)** |
-| GRU, pooled runs, charge only | 0.3453 (−31.7 %) | 0.1407 (−2.4 %) | 0.0495 (−29.5 %) | 0.0189 (−4.6 %) | 0.0119 (−2.4 %) |
-| GRU, other runs only (frozen test) | 0.3463 (−31.5 %) | 0.1399 (−3.0 %) | 0.0493 (−29.8 %) | 0.0189 (−4.5 %) | 0.0118 (−3.7 %) |
-| *first GRU (runs 1–3; all shots, whole window, no clip; before the interpolation fix)* | *0.366* | *0.1411* | *0.0543* | | |
+| 9-shot mean (baseline) | 0.3430 | 0.1442 | 0.1414 | 0.0195 | 0.0122 |
+| hybrid (z = 6, wmax = 20) | 0.3156 (−8.0 %) | 0.1414 (−1.9 %) | 0.1392 (−1.6 %) | 0.0192 (−1.7 %) | 0.0119 (−2.5 %) |
+| combined (hybrid + ridge), trained on all 5 runs | 0.3163 (−7.8 %) | 0.1399 (−3.0 %) | 0.1371 (−3.0 %) | 0.0183 (−5.9 %) | 0.0119 (−3.0 %) |
+| ridge alone (`forecast_run.py`, own run) | 0.3312 (−3.4 %) | 0.1395 (−3.2 %) | 0.1353 (−4.3 %) | 0.0179 (−8.1 %) | 0.0118 (−3.5 %) |
+| **GRU, pooled runs** | **0.3116 (−9.2 %)** | **0.1399 (−3.0 %)** | **0.1359 (−3.9 %)** | **0.0186 (−4.6 %)** | **0.0118 (−3.3 %)** |
+| GRU, pooled runs, charge only | 0.3096 (−9.8 %) | 0.1407 (−2.4 %) | 0.1364 (−3.5 %) | 0.0186 (−4.5 %) | 0.0120 (−1.6 %) |
+| GRU, other runs only (frozen test) | 0.3129 (−8.8 %) | 0.1408 (−2.3 %) | 0.1370 (−3.1 %) | 0.0186 (−4.8 %) | 0.0118 (−3.6 %) |
 
-Seed-to-seed spread of the test MAE: ≤ 0.0019 nC. Every fit beats the hybrid on validation (e.g. 5.34 % against
-5.42 % L1).
+Seed-to-seed spread of the test MAE: ≤ 0.0017 nC. Every fit beats the hybrid on validation (e.g. 4.09 % against
+4.15 % L1).
 
-- **The GRU matches the combined forecaster within 0.0003 nC on all five runs**, and transfers to unseen runs (−4.5 %
-  and −3.7 % on runs 4 and 5, trained without them). It satisfies the Hard-tier rule: a sequence model that beats the
-  9-shot mean on a chronological split.
-- **The laser channels add little.** Without them the GRU is slightly better on run 1 and slightly worse on the others.
+- **The GRU beats the 9-shot mean on all five runs, also trained without the run it is tested on.** It satisfies the
+  Hard-tier rule: a sequence model that beats the 9-shot mean on a chronological split. The gain is significant on
+  every run (bootstrap below).
+- **It is the best cross-run model on runs 1, 3 and 5;** the combined forecaster is better on run 4. The own-run
+  ridge is as good on runs 2, 3 and 5 and better on run 4.
+- **On run 1's stable test shots** the GRU gains 3.6 % (0.2983 vs 0.3096); the rest of its 9 % is the final level
+  change.
+- **The laser channels add little.** Without them the GRU is slightly better on run 1 and worse on the others.
 
 ### Context window (`gru_window_sweep.py`, `results/gru/window_sweep.txt`; runs 1–3, pooled, 3 seeds)
 
 | window L (shots) | 8 | 16 | 32 | 64 (used) | 128 | 256 |
 |---|---|---|---|---|---|---|
-| validation L1 (hybrid 4.67–4.68 %) | 4.65 % | 4.64 % | 4.64 % | 4.65 % | 4.65 % | 4.65 % |
-| test MAE, run 1 | 0.3479 | 0.3467 | 0.3484 | 0.3482 | 0.3463 | 0.3475 |
-| test MAE, run 2 | 0.1406 | 0.1401 | 0.1404 | 0.1406 | 0.1403 | 0.1401 |
-| test MAE, run 3 | 0.0491 | 0.0491 | 0.0492 | 0.0491 | 0.0491 | 0.0491 |
+| validation L1 (hybrid 2.87 %) | 2.83 % | 2.82 % | 2.81 % | 2.82 % | 2.82 % | 2.83 % |
+| test MAE, run 1 | 0.3125 | 0.3120 | 0.3121 | 0.3130 | 0.3123 | 0.3133 |
+| test MAE, run 2 | 0.1404 | 0.1405 | 0.1404 | 0.1403 | 0.1402 | 0.1403 |
+| test MAE, run 3 | 0.1365 | 0.1361 | 0.1359 | 0.1358 | 0.1361 | 0.1359 |
 
-- **The window length makes no real difference:** the test MAE moves by ≤ 0.002 nC on run 1 and ≤ 0.0005 on the
-  others, within ~2 seed spreads.
+- **The window length makes no real difference:** the test MAE moves by ≤ 0.0013 nC on run 1 and ≤ 0.0007 on the
+  others, within ~2 seed spreads. The same held before the cuts.
 - This fits white jitter on stable beam: the hybrid level already holds the useful history, and the GRU only adds a
-  small correction from the last few shots. L = 64 is kept. L = 256 costs ~10 min per fit.
-- **What made the difference.** Each fix came from looking at where the GRU lost:
+  small correction from the last few shots. L = 64 is kept. L = 256 costs ~6–9 min per fit.
+- **What made the difference** (full runs 1–3, before the cuts and the interpolation fix). Each fix came from
+  looking at where the GRU lost:
 
 | Step | Run 1 | Run 2 | Run 3 |
 |---|---|---|---|
@@ -325,37 +325,30 @@ Seed-to-seed spread of the test MAE: ≤ 0.0019 nC. Every fit beats the hybrid o
 | + window limited to the current segment | 0.3415 | 0.1401 | 0.0503 |
 | + off when the newest shot was skipped; zero-initialised output | 0.3411 | 0.1401 | 0.0481 |
 
-  (Pooled-runs variant, before the interpolation fix; after it, the last row is 0.3482 / 0.1406 / 0.0491. A
-  50/200-shot segment-mean channel was also tried and made no difference.)
-- **The run-3 plateau.** At shots 23394–23445 the BCM reads a steady 1.67 nC, while the beam-loading step says
-  5.4 nC and the laser 11 uJ (about 5 nC earlier in the run). The BCM is probably wrong there, but the official score
-  uses it.
-  - The hybrid's stuck-BCM check skips these shots and holds 1.68, which happens to match.
-  - The GRU saw a window of skipped shots, never seen in training, and predicted 13 % low until it was switched off
-    there.
+  The last fix came from run 3's 1.67 nC BCM plateau (shots 23394–23445, now discarded). There the hybrid's stuck-BCM
+  check skipped every shot, and the GRU, given a window of skipped shots it had never seen in training, predicted
+  13 % low.
 
 ### Do the notebook variables help? (`screen_variables.py`, `results/gru/screen_variables.txt`)
 
-- **Same shot, they correlate as the notebooks found.** Against the charge jitter: lab 0.59–0.62, clex 0.54–0.60,
-  laser scope 0.36–0.45, step 0.26–0.36. Klystron, gun field, magnets, temperatures and humidities are all |r| < 0.09.
+- **Same shot, they correlate as the notebooks found.** Against the charge jitter: lab 0.61–0.62, clex 0.55–0.60,
+  laser scope 0.38–0.45, step 0.28–0.42. Klystron, gun field, magnets, temperatures and humidities are all |r| < 0.08.
 - **For the next shot, none of them helps.** Added to the correction, each group changes the stable-beam MAE on an
-  unseen run by less than 0.5 %. All of them together make run 3 1.0 % worse.
+  unseen run by less than 0.4 %. All of them together make run 3 0.6 % worse.
   - The jitter is laser-driven, and the next pulse's laser energy is not predictable from earlier pulses.
   - The slow variables (temperature, humidity, magnets) do not lead the charge drift by enough to matter.
-- **A trap:** the laser scope shifted one pulse early correlates 0.17–0.29 with the next-shot error, twice the lab
-  meter. That is because it is the next shot's laser reading, which is future data. Its same-shot r peaks at the stamp
-  alignment, which confirms the stamp alignment. Any new variable that suddenly predicts well should get this check.
+- **A trap:** the laser scope shifted one pulse early correlates 0.22–0.30 with the next-shot error, more than twice
+  the lab meter. That is because it is the next shot's laser reading, which is future data. Its same-shot r peaks at
+  the stamp alignment, which confirms the stamp alignment. Any new variable that suddenly predicts well should get
+  this check.
 
-### Where the error is (summed |error|, combined forecaster, test regions)
+### Where the error is
 
-| | stable beam | 20 shots after a change | other (unsettled beam) |
-|---|---|---|---|
-| run 1 | 62 % | 20 % (69 of the 74 nC in the first 3 shots of a new level) | 19 % |
-| run 2 | 100 % | – | – |
-| run 3 | 25 % | 41 % | 34 % |
-
-- On stable beam the remaining error is white, laser-driven jitter.
-- After a change, nearly all of the error is in the first shot or two. Changes come without warning in the data.
+- After the cuts the test regions are stable beam, except run 1's last 7 shots (5 % of the hybrid's summed error).
+- On stable beam the remaining error is white, laser-driven jitter: lag-1 autocorrelation +0.02 to +0.13 about the
+  9-shot mean.
+- Before the cuts, run 1's test region had 20 % of the error in the 20 shots after a change, and run 3's 41 %, nearly
+  all in the first 1–3 shots of a new level. Changes come without warning in the data.
 
 ## Are the gains real? Prediction intervals (`forecast_uncertainty.py`, `results/uncertainty/`)
 
@@ -369,29 +362,30 @@ retrained. It runs in ~20 s.
 
 ### Bootstrap intervals for the gains
 
-A moving-block bootstrap of the test shots (50-shot blocks, 4000 resamples) gives a 95 % interval for each MAE
-reduction. The blocks keep the error autocorrelation: a level change gives a run of large errors. Where the 9-shot mean
-has no good shot in its window (4 shots after a beam trip on run 3), it holds its last value, so that every forecaster
-is scored on the same shots. This puts run 3's baseline at 0.0710 instead of 0.0702.
+A circular block bootstrap of the test shots (50-shot blocks, 4000 resamples) gives a 95 % interval for each MAE
+reduction.
+- The blocks keep the error autocorrelation.
+- Wrapping round gives the last shots the same weight as the rest. With plain moving blocks, run 1's final level
+  change was under-sampled, and the point estimate fell outside its own interval.
+- Where the 9-shot mean has no good shot in its window (after a beam trip), it holds its last value, so that every
+  forecaster is scored on the same shots.
 
 | % MAE reduction [95 % interval] | run 1 (09_07) | run 2 (08_21) | run 3 (08_00) | run 4 (07_21) | run 5 (08_15) |
 |---|---|---|---|---|---|
-| hybrid vs 9-shot mean | +30.7 [+1.4, +38.0] | +1.9 [+0.3, +3.4] | +30.5 [+14.0, +41.1] | +2.6 [−0.6, +4.3] | +2.5 [+0.9, +3.7] |
-| combined vs 9-shot mean | +31.1 [+2.2, +38.3] | +3.0 [+1.5, +4.7] | +30.4 [+13.5, +40.8] | +6.4 [+3.7, +8.2] | +3.3 [+1.7, +4.6] |
-| GRU pooled vs 9-shot mean | +31.3 [+2.4, +38.5] | +2.9 [+1.3, +4.7] | +30.6 [+13.1, +40.8] | +5.1 [+2.1, +6.7] | +3.1 [+1.5, +4.5] |
-| combined vs hybrid | +0.5 [−1.1, +2.4] | +1.1 [+0.1, +2.5] | −0.1 [−2.1, +1.6] | +3.9 [+2.7, +5.2] | +0.9 [−0.5, +2.1] |
-| GRU pooled vs hybrid | +0.8 [−0.5, +2.6] | +1.0 [−0.2, +2.5] | +0.2 [−0.8, +1.0] | +2.6 [+1.4, +3.9] | +0.6 [−0.6, +1.8] |
-| GRU other runs only vs hybrid | +1.1 [−0.1, +2.6] | +1.1 [+0.1, +2.4] | +0.1 [−0.8, +1.0] | +2.0 [+0.9, +3.1] | +1.3 [+0.3, +2.2] |
+| hybrid vs 9-shot mean | +8.0 [+1.1, +16.9] | +1.9 [+0.3, +3.5] | +1.6 [+0.1, +3.0] | +1.7 [−1.2, +4.2] | +2.5 [+1.0, +3.7] |
+| combined vs 9-shot mean | +7.8 [+0.3, +16.3] | +3.0 [+1.4, +4.7] | +3.0 [+1.3, +4.7] | +5.9 [+3.4, +8.5] | +3.0 [+1.5, +4.5] |
+| GRU pooled vs 9-shot mean | +9.2 [+2.0, +17.5] | +3.0 [+1.4, +4.6] | +3.9 [+2.3, +5.5] | +4.6 [+1.8, +7.0] | +3.3 [+1.9, +4.7] |
+| GRU other runs only vs 9-shot mean | +8.8 [+1.6, +17.5] | +2.3 [+0.7, +3.9] | +3.1 [+1.4, +4.7] | +4.8 [+2.0, +7.1] | +3.6 [+2.3, +4.7] |
+| combined vs hybrid | −0.2 [−2.3, +2.0] | +1.1 [−0.2, +2.3] | +1.5 [−0.0, +3.0] | +4.3 [+2.8, +5.7] | +0.6 [−0.9, +2.0] |
+| GRU pooled vs hybrid | +1.3 [−0.0, +2.7] | +1.1 [−0.1, +2.2] | +2.3 [+1.0, +3.8] | +2.9 [+1.5, +4.4] | +0.8 [−0.2, +1.9] |
 
-- **The combined forecaster and the GRU beat the 9-shot mean significantly on all five runs.** This is the Hard-tier
-  claim.
-- **On run 1 the lower bound is only ~+2 %.** Nearly all of the gain comes from the two level changes in the test
-  region; a resample that leaves them out shows almost none.
-- **The stable-beam correction on top of the hybrid is small: 0–4 %.** It is significant on run 4 for every model,
-  and on run 2 for some of them. On runs 1, 3 and 5 it cannot be told apart from 0. The combined forecaster and the GRU
-  cannot be told apart anywhere.
-- **With 200-shot blocks the conclusions are the same.** The hybrid on run 2 is then no longer significant
-  (+1.9 [−0.2, +3.2]), and the hybrid on run 4 becomes just significant.
+- **The GRU beats the 9-shot mean significantly on all five runs,** also when trained without the test run. This is
+  the Hard-tier claim. The combined forecaster does too, though only just on run 1.
+- **Run 1's interval is wide** because most of its gain is the 7 shots of the final level change.
+- **The correction on top of the hybrid is 0–4 %.** It is significant on run 4 for both models and on run 3 for the
+  GRU; elsewhere it cannot be told apart from 0. The combined forecaster and the GRU cannot be told apart anywhere.
+- **With 200-shot blocks the conclusions are the same.** The hybrid on run 4 stays not significant, and the GRU vs
+  hybrid on run 1 becomes just significant.
 
 ### 90 % prediction intervals
 
@@ -401,21 +395,21 @@ calibrations, both causal:
   jitter when the regime changes.
 - **fixed:** the quantiles of the run's own training part.
 
-Forecasts made fewer than 5 shots into a new segment use wider quantiles, −17 % / +32 %. These come from 527 such
-forecasts, pooled over the training parts of all runs.
+Forecasts made fewer than 5 shots into a new segment use quantiles pooled over such forecasts in all runs' training
+parts. After the cuts there are only 71 of them, and their quantiles (−15 % / +387 %) are too unstable to use; they
+only matter for run 1's last few shots.
 
 | combined forecaster, test region | run 1 | run 2 | run 3 | run 4 | run 5 |
 |---|---|---|---|---|---|
-| coverage, rolling (nominal 90 %) | 88.7 % | 89.7 % | 87.1 % | 87.7 % | 91.9 % |
-| mean width, rolling (% of level) | 13.3 | 10.1 | 22.5 | 29.1 | 54.2 |
-| coverage, fixed | 93.3 % | 91.0 % | 73.6 % | 85.7 % | 84.6 % |
-| coverage within 20 shots of a change, rolling | 78.7 % | – | 80.8 % | – | – |
+| coverage, rolling (nominal 90 %) | 90.0 % | 89.8 % | 89.4 % | 87.2 % | 91.9 % |
+| mean width, rolling (% of level) | 14.2 | 10.1 | 12.9 | 32.2 | 54.2 |
+| coverage, fixed | 83.6 % | 91.1 % | 87.6 % | 82.6 % | 83.9 % |
 
-- **The rolling calibration holds 87–92 % on all runs.** The fixed one fails where the regime moves away from the
-  training part: run 3 (5 nC → 0.3 nC) and run 5.
-- **The width follows the relative jitter:** ±5–7 % at 5–19 nC, ±11 % at 0.3 nC, ±15 % and ±27 % at 0.1–0.2 nC.
-- **The first shot of each level change falls outside any interval of sensible width,** so coverage after changes is
-  ~80 %. The changes come without warning.
+- **The rolling calibration holds 87–92 % on all runs.** The fixed one drops to 83–84 % on runs 1, 4 and 5, where
+  the jitter in the test region differs from the training part.
+- **The width follows the relative jitter:** ±5–7 % at 5–10 nC, ±16 % at 0.2 nC (run 4) and ±27 % at 0.1 nC (run 5).
+- **The first shot of a level change falls outside any interval of sensible width.** Before the cuts, coverage in
+  the 20 shots after changes was ~80 %.
 
 ## Same-shot virtual BCM (`virtual_bcm.py`, `results/virtual_bcm/`)
 
@@ -438,35 +432,33 @@ ones, because level changes are where it should help. There are two ridges: one 
 
 | MAE against the BCM, test region (nC) | run 1 (09_07) | run 2 (08_21) | run 3 (08_00) | run 4 (07_21) | run 5 (08_15) |
 |---|---|---|---|---|---|
-| hybrid next-shot forecast (for scale) | 0.350 | 0.1414 | 0.0494 | 0.0193 | 0.0119 |
-| virtual BCM, lab only, pooled runs | 0.304 (−13 %) | 0.1205 (−15 %) | 0.0472 (−4 %) | 0.0172 (−11 %) | 0.0117 (−2 %) |
-| **virtual BCM, lab + clex + scope, pooled runs** | **0.295 (−16 %)** | **0.1185 (−16 %)** | **0.0454 (−8 %)** | **0.0134 (−31 %)** | **0.0104 (−13 %)** |
-| virtual BCM, lab + clex + scope, other runs only | 0.297 (−15 %) | 0.1204 (−15 %) | 0.0462 (−6 %) | 0.0134 (−30 %) | 0.0106 (−11 %) |
-| *the same, one ridge for all charges, pooled runs* | *0.302* | *0.1251* | *0.0449* | *0.0140* | *0.0106* |
-| BCM lost at the cut: laser × frozen charge/laser ratio | 0.622 | 0.1655 | 0.519 | 0.0192 | 0.0234 |
-| BCM lost at the cut: step − frozen offset | 0.387 | 0.355 | 0.437 | 0.344 | 0.364 |
+| hybrid next-shot forecast (for scale) | 0.3156 | 0.1414 | 0.1392 | 0.0192 | 0.0119 |
+| virtual BCM, lab only, pooled runs | 0.258 (−18 %) | 0.1178 (−17 %) | 0.1336 (−4 %) | 0.0167 (−13 %) | 0.0116 (−3 %) |
+| **virtual BCM, lab + clex + scope, pooled runs** | **0.252 (−20 %)** | **0.1165 (−18 %)** | **0.1315 (−5 %)** | **0.0121 (−37 %)** | **0.0103 (−13 %)** |
+| virtual BCM, lab + clex + scope, other runs only | 0.251 (−20 %) | 0.1169 (−17 %) | 0.1320 (−5 %) | 0.0121 (−37 %) | 0.0107 (−10 %) |
+| BCM lost at the cut: laser × frozen charge/laser ratio | 0.232 | 0.1655 | 0.1701 | 0.0199 | 0.0234 |
+| BCM lost at the cut: step − frozen offset | 0.344 | 0.355 | 0.363 | 0.347 | 0.364 |
 
-- **On stable beam, seeing the shot's own laser cuts the error by ~16 % on runs 1 and 2:** run 1 0.233 vs 0.282 nC,
-  run 2 0.119 vs 0.141. This is the laser-driven jitter that no forecast can see coming.
-- **On the low-charge runs it gains even more: −31 % on run 4 and −13 % on run 5.**
-- **At level changes it finds the new level on the shot itself** (see the zooms in the plots). After changes:
-  run 1 0.73 vs 0.83 nC, run 3 0.118 vs 0.152.
-- **At 0.3 nC (run 3) it gains nothing on stable beam** (0.0256 vs 0.0255).
-- **It transfers.** Trained on the other runs only, it is within 0.002 nC of the pooled model on runs 1 and 2, and
-  cuts the error by 30 % and 11 % on the unseen runs 4 and 5.
-- **Why two ridges.** The laser→charge relation differs below 1 nC. One ridge pooled over all 5 runs made runs 1–2
-  worse (0.302 / 0.125 nC, against 0.293 / 0.118 when trained on runs 1–3).
-  - Below 1 nC the clex meter carries most of the signal: clex vs its 20-shot mean +3.8 % per std, against +1.2 % for
-    lab. The lab meter sits before the attenuation used for low charge.
-  - Above 1 nC it is the lab meter: lab vs its 20-shot mean +1.6 %.
+- **On stable beam, seeing the shot's own laser cuts the error by 18–21 % on runs 1 and 2:** run 1 0.238 vs 0.302 nC,
+  run 2 0.117 vs 0.141. This is the laser-driven jitter that no forecast can see coming.
+- **On run 3 it gains only 5 %,** and on the low-charge runs 37 % (run 4) and 13 % (run 5).
+- **It transfers.** Trained on the other runs only, it is within 0.0005 nC of the pooled model on runs 1–4.
+- **Why two ridges** (found before the cuts). The laser→charge relation differs below 1 nC; one ridge for all charges
+  made runs 1–2 worse.
+  - Below 1 nC the clex meter carries most of the signal: clex vs its 20-shot mean +3.4 % per std, against lab
+    features at ~1 %. The lab meter sits before the attenuation used for low charge.
+  - Above 1 nC it is the lab meter: lab vs its 20-shot mean +1.5 %, then the 200-shot charge mean +0.7 % and clex vs
+    its 200-shot mean +0.5 %.
 - **The beam-loading step is not used.** Its noise is roughly fixed in nC, so at 0.3 nC it is 8× noisier relative
-  to the level than at 5 nC (std of the feature 0.75 vs 0.09). Trained on the high-charge runs, the model trusted it
-  too much: run 3 scored 0.0511 nC with it and 0.0472 without. On runs 1 and 2 it added < 0.3 %.
-- **What it uses most above 1 nC** (change of the estimate per std of each feature): lab vs its 20-shot mean +1.6 %,
-  clex vs its 200-shot mean +0.8 %, the 200-shot charge mean +0.6 %, lab vs its 200-shot mean +0.5 %, scope vs its
-  20-shot mean +0.4 %.
-- **With no BCM at all after the cut, neither stand-in holds.** Both are calibrated once, on the last 200 good
-  training shots. The errors are 1.1–10× the hybrid's on runs 1–3 and 5: the virtual BCM needs the BCM history to
-  re-anchor. Only on the quiet run 4 does the laser ratio match the hybrid.
+  to the level than at 5 nC. Trained on the high-charge runs, the model trusted it too much on run 3's 0.3 nC part
+  (before the cuts: 0.0511 nC with it, 0.0472 without). On runs 1 and 2 it added < 0.3 %.
+- **With no BCM at all after the cut,** both stand-ins are calibrated once, on the last 200 good training shots.
+  - The laser ratio holds where the test region stays in the same regime as the end of training: on run 1 it is
+    better than the hybrid (0.232 vs 0.316), and on run 4 it matches it.
+  - It fails on runs 2, 3 and 5 (17–96 % worse than the hybrid), because the charge per uJ drifts.
+  - The step stand-in fails everywhere.
+- **The camera may help here.** Notebook 07_02 finds the screen intensity (BTV_intensity) at r = 0.68–0.81 with the
+  charge jitter in run 1's clean segments, close to the lab meter. Before using it, recheck with dropouts removed
+  (see the klystron note above), and check its pulse alignment, because the camera read is slow and misses pulses.
 - **How the interpolation leak was found.** The first version overshot after big jumps up (30 nC predicted against
   18 nC). The interpolated meters ramped linearly across gaps after a jump, so shot n's "reading" was partly shot n+1's.

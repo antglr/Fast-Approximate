@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 from beam_loading_step import step
 from nbfuncs import TARGET, cut_shot, dropouts
+from run_data import clean_run, kept_chunks
 from pulses import align, meter_shift, pulse_ids, read_delay, rf_shift
 
 p = os.path.join(sys.argv[1], sys.argv[2])
@@ -20,7 +21,8 @@ P = align(d['PGLA'], pid, rf_shift(d['PGLA_off']))
 s = pd.Series(step(P) / 0.89, df.index).rolling(41, center=True, min_periods=10).median()
 lab = pd.Series(align(L['lab'], pid, meter_shift(read_delay(df['pc_time'], t))) * 1e6, df.index)
 field = P[:, 400:600].mean(1) - P[:, :40].mean(1)
-Q, cut, drop = df[TARGET], cut_shot(df), dropouts(df)
+Q, cut, drop = df[TARGET], cut_shot(clean_run(df, sys.argv[2])), dropouts(df)
+kept = kept_chunks(df, sys.argv[2])
 
 fig, ax = plt.subplots(3, 1, figsize=(14, 9), sharex=True)
 ax[0].plot(df.index, Q, ',', color='k', label='BCM_GUN')
@@ -30,8 +32,9 @@ ax[0].set_ylabel('charge (nC)'); ax[0].legend(markerscale=20, loc='upper left')
 ax[1].plot(df.index, lab, ',', color='C0'); ax[1].set_ylabel('lab laser (uJ)')
 ax[2].plot(df.index, field, ',', color='C2'); ax[2].set_ylabel('gun field (PGLA a.u.)'); ax[2].set_xlabel('shot')
 for a in ax:
-    a.axvspan(cut, df.index[-1], color='0.85', zorder=0)
-ax[0].set_title(f'{sys.argv[2]}: grey = test region (last 10 %)')
+    a.axvspan(cut, df.index[kept][-1], color='0.85', zorder=0)
+    a.fill_between(df.index, 0, 1, where=~kept, transform=a.get_xaxis_transform(), color='r', alpha=0.12, lw=0)
+ax[0].set_title(f'{sys.argv[2]}: grey = test region (last 10 % of the clean span), red = discarded (CLEAN_CUTS.toml)')
 fig.tight_layout(); fig.savefig(sys.argv[3], dpi=110)
 
 g = pd.DataFrame({'Q': Q, 'Qstep': s, 'lab': lab, 'field': field, 'drop': drop}).groupby(ch // 10 * 10)

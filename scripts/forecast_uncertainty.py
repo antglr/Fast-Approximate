@@ -1,6 +1,6 @@
 # Are the forecasters' gains real, and how sure is each forecast? Reads the next-shot forecasts gru_forecast.py saves
 # (gru_forecasts.npz: full-run arrays, the forecast made after shot i for shot i+1).
-# 1. Moving-block bootstrap of the test-region MAE ratio against the 9-shot mean and against the hybrid. Blocks keep the
+# 1. Circular block bootstrap of the test-region MAE ratio against the 9-shot mean and against the hybrid. Blocks keep the
 #    error autocorrelation (a level change gives a run of large errors).
 # 2. 90 % prediction intervals for the combined forecaster: forecast x (1 + [q05, q95] of the relative residual).
 #    'rolling': quantiles of the last CAL good residuals of the run, each used only once its shot is measured (causal,
@@ -20,10 +20,11 @@ BASE, HYB, SHOW = '9-shot mean (baseline)', 'hybrid (z=6, wmax=20)', 'combined, 
 
 
 def boot_gain(e_ref, e, rng):
-    # % MAE reduction against the reference, with a 95 % moving-block bootstrap interval
+    # % MAE reduction against the reference, with a 95 % circular block bootstrap interval (wrapping round gives the
+    # last shots the same weight as the rest: run 1's few large errors sit at the end of its test region)
     n = len(e)
-    starts = rng.integers(0, n - BLOCK + 1, (NBOOT, -(-n // BLOCK)))
-    idx = (starts[:, :, None] + np.arange(BLOCK)).reshape(NBOOT, -1)[:, :n]
+    starts = rng.integers(0, n, (NBOOT, -(-n // BLOCK)))
+    idx = (starts[:, :, None] + np.arange(BLOCK)).reshape(NBOOT, -1)[:, :n] % n
     g = 100 * (1 - e[idx].mean(1) / e_ref[idx].mean(1))
     return 100 * (1 - e.mean() / e_ref.mean()), *np.percentile(g, [2.5, 97.5])
 
@@ -52,7 +53,7 @@ def main():
                     g, lo, hi = boot_gain(E[ref][ok], e[ok], rng)
                     row[f'vs {ref[:11]}: gain %'] = f'{g:+6.2f} [{lo:+6.2f}, {hi:+6.2f}]' + (' *' if lo > 0 or hi < 0 else '')
             rows.append(row)
-    print(f'next-shot test MAE (nC) and its % reduction against the 9-shot mean and the hybrid, with 95 % moving-block '
+    print(f'next-shot test MAE (nC) and its % reduction against the 9-shot mean and the hybrid, with 95 % circular block '
           f'bootstrap intervals ({BLOCK}-shot blocks); * = the interval excludes 0')
     print(pd.DataFrame(rows).round(4).fillna('').to_string(index=False))
 

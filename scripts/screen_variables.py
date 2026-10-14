@@ -37,6 +37,8 @@ for run in RUNS:
     for k in ('DHG0130', 'SNH_110', 'SNI_120', 'TEMP1', 'TEMP2', 'TEMP3', 'TEMP4', 'HUMID1', 'HUMID2', 'HUMID3', 'HUMID4'):
         V[k] = df[k].values.astype(float)
     V['lab'], V['clex'], V['step'] = r['x'].lab.values, r['x'].clex.values, r['x'].step.values
+    pos = np.searchsorted(d['shot'], df.index)          # the npz arrays cover the whole run, df only the clean span
+    V = {k: v if len(v) == len(df) else v[pos] for k, v in V.items()}
     r['V'] = pd.DataFrame(V, df.index).replace([np.inf, -np.inf], np.nan)
     R[run] = r
     print(run, 'scope bad', bad.mean().round(3), flush=True)

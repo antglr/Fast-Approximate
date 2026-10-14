@@ -1,5 +1,6 @@
 # One contiguous run's tables, put on the pulse grid, plus the shot labels the forecast scripts share.
 import os
+import tomllib
 import numpy as np
 import pandas as pd
 from beam_loading_step import step
@@ -7,6 +8,27 @@ from nbfuncs import TARGET, W, dropouts
 from pulses import align, meter_shift, pulse_ids, read_delay, rf_shift
 
 PER_NC = 0.89          # beam-loading step, a.u. per nC
+CUTS = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'config', 'CLEAN_CUTS.toml')
+
+
+def kept_chunks(df, run):
+    # per shot: in a chunk the team marked clean (config/CLEAN_CUTS.toml; a run not listed there is not used: KeyError)
+    with open(CUTS, 'rb') as f:
+        keep = tomllib.load(f)[f'acquisition_{run}']['keep']
+    if keep == 'all':
+        return pd.Series(True, df.index)
+    n = df['chunk'].str.extract(r'(\d+)', expand=False).astype(int)      # 'chunk_00041.h5' -> 41
+    return pd.concat([n.between(a, b) for a, b in keep], axis=1).any(axis=1)
+
+
+def clean_run(df, run):
+    # trim the run to its first..last clean chunk, so the test region is the last 10 % of that span. The discarded
+    # chunks in between lose their BCM reading: they count as dropouts, never trained on or scored, and no forecast
+    # averages across them
+    k = kept_chunks(df, run)
+    df = df.loc[k.idxmax():k[::-1].idxmax()].copy()
+    df[TARGET] = df[TARGET].where(k)
+    return df
 
 
 def load_run(tables, run):
@@ -27,6 +49,8 @@ def load_run(tables, run):
     # fill gaps with the last reading: interpolating fills shot n from later shots, a leak into the causal features
     # (bfill only fills the first shots of a run, before any reading)
     x = x.ffill().bfill()
+    df = clean_run(df, run)
+    x = x.loc[df.index]
     # shots where the BCM itself is wrong (stuck low while the beam-loading step sees full charge): never train on them
     qstep = x.step.rolling(41, center=True, min_periods=10).median()
     bcm_bad = (qstep > 1) & (df[TARGET] < 0.5 * qstep)

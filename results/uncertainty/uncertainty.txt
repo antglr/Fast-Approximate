@@ -1,48 +1,48 @@
-next-shot test MAE (nC) and its % reduction against the 9-shot mean and the hybrid, with 95 % moving-block bootstrap intervals (50-shot blocks); * = the interval excludes 0
+next-shot test MAE (nC) and its % reduction against the 9-shot mean and the hybrid, with 95 % circular block bootstrap intervals (50-shot blocks); * = the interval excludes 0
                 run                       forecast  test MAE    vs 9-shot mean: gain %    vs hybrid (z=6: gain %
-2026-10-09_07-46-07         9-shot mean (baseline)    0.5053                                                    
-2026-10-09_07-46-07          hybrid (z=6, wmax=20)    0.3500 +30.72 [ +1.39, +37.96] *                          
-2026-10-09_07-46-07 combined, ridge on pooled runs    0.3483 +31.06 [ +2.21, +38.25] *    +0.48 [ -1.11,  +2.42]
-2026-10-09_07-46-07               GRU, pooled runs    0.3472 +31.29 [ +2.44, +38.47] *    +0.81 [ -0.53,  +2.62]
-2026-10-09_07-46-07  GRU, pooled runs, charge only    0.3453 +31.67 [ +2.91, +39.30] *  +1.36 [ +0.35,  +2.65] *
-2026-10-09_07-46-07           GRU, other runs only    0.3463 +31.47 [ +2.72, +38.69] *    +1.07 [ -0.12,  +2.57]
+2026-10-09_07-46-07         9-shot mean (baseline)    0.3430                                                    
+2026-10-09_07-46-07          hybrid (z=6, wmax=20)    0.3156  +8.00 [ +1.11, +16.86] *                          
+2026-10-09_07-46-07 combined, ridge on pooled runs    0.3163  +7.79 [ +0.28, +16.30] *    -0.23 [ -2.26,  +1.97]
+2026-10-09_07-46-07               GRU, pooled runs    0.3116  +9.15 [ +2.04, +17.54] *    +1.26 [ -0.04,  +2.66]
+2026-10-09_07-46-07  GRU, pooled runs, charge only    0.3096  +9.76 [ +2.70, +18.71] *  +1.91 [ +0.73,  +3.19] *
+2026-10-09_07-46-07           GRU, other runs only    0.3129  +8.78 [ +1.62, +17.48] *    +0.84 [ -0.53,  +2.36]
 2026-10-08_21-11-47         9-shot mean (baseline)    0.1442                                                    
-2026-10-08_21-11-47          hybrid (z=6, wmax=20)    0.1414  +1.93 [ +0.25,  +3.35] *                          
-2026-10-08_21-11-47 combined, ridge on pooled runs    0.1398  +3.04 [ +1.47,  +4.73] *  +1.14 [ +0.13,  +2.48] *
-2026-10-08_21-11-47               GRU, pooled runs    0.1400  +2.89 [ +1.31,  +4.67] *    +0.98 [ -0.19,  +2.51]
-2026-10-08_21-11-47  GRU, pooled runs, charge only    0.1407  +2.42 [ +0.79,  +3.98] *    +0.50 [ -0.63,  +1.91]
-2026-10-08_21-11-47           GRU, other runs only    0.1399  +2.96 [ +1.36,  +4.56] *  +1.06 [ +0.08,  +2.37] *
-2026-10-08_00-08-19         9-shot mean (baseline)    0.0710                                                    
-2026-10-08_00-08-19          hybrid (z=6, wmax=20)    0.0494 +30.49 [+13.99, +41.12] *                          
-2026-10-08_00-08-19 combined, ridge on pooled runs    0.0494 +30.42 [+13.49, +40.78] *    -0.10 [ -2.06,  +1.57]
-2026-10-08_00-08-19               GRU, pooled runs    0.0493 +30.61 [+13.06, +40.84] *    +0.18 [ -0.81,  +1.04]
-2026-10-08_00-08-19  GRU, pooled runs, charge only    0.0495 +30.32 [+13.27, +40.66] *    -0.23 [ -1.13,  +0.53]
-2026-10-08_00-08-19           GRU, other runs only    0.0493 +30.57 [+13.57, +40.92] *    +0.12 [ -0.83,  +0.98]
-2026-10-07_21-43-26         9-shot mean (baseline)    0.0198                                                    
-2026-10-07_21-43-26          hybrid (z=6, wmax=20)    0.0193    +2.60 [ -0.56,  +4.32]                          
-2026-10-07_21-43-26 combined, ridge on pooled runs    0.0185  +6.40 [ +3.68,  +8.16] *  +3.91 [ +2.72,  +5.16] *
-2026-10-07_21-43-26               GRU, pooled runs    0.0188  +5.14 [ +2.12,  +6.74] *  +2.61 [ +1.42,  +3.92] *
-2026-10-07_21-43-26  GRU, pooled runs, charge only    0.0189  +4.64 [ +1.36,  +6.29] *  +2.10 [ +0.75,  +3.39] *
-2026-10-07_21-43-26           GRU, other runs only    0.0189  +4.49 [ +1.55,  +6.00] *  +1.95 [ +0.94,  +3.11] *
+2026-10-08_21-11-47          hybrid (z=6, wmax=20)    0.1414  +1.93 [ +0.34,  +3.45] *                          
+2026-10-08_21-11-47 combined, ridge on pooled runs    0.1399  +2.99 [ +1.35,  +4.68] *    +1.09 [ -0.23,  +2.31]
+2026-10-08_21-11-47               GRU, pooled runs    0.1399  +2.95 [ +1.40,  +4.55] *    +1.05 [ -0.14,  +2.22]
+2026-10-08_21-11-47  GRU, pooled runs, charge only    0.1407  +2.42 [ +0.85,  +3.97] *    +0.51 [ -0.75,  +1.85]
+2026-10-08_21-11-47           GRU, other runs only    0.1408  +2.33 [ +0.69,  +3.92] *    +0.41 [ -0.99,  +1.84]
+2026-10-08_00-08-19         9-shot mean (baseline)    0.1414                                                    
+2026-10-08_00-08-19          hybrid (z=6, wmax=20)    0.1392  +1.59 [ +0.12,  +3.03] *                          
+2026-10-08_00-08-19 combined, ridge on pooled runs    0.1371  +3.03 [ +1.27,  +4.66] *    +1.47 [ -0.03,  +2.95]
+2026-10-08_00-08-19               GRU, pooled runs    0.1359  +3.87 [ +2.32,  +5.48] *  +2.32 [ +0.95,  +3.77] *
+2026-10-08_00-08-19  GRU, pooled runs, charge only    0.1364  +3.54 [ +1.67,  +5.34] *  +1.99 [ +0.43,  +3.62] *
+2026-10-08_00-08-19           GRU, other runs only    0.1370  +3.09 [ +1.40,  +4.66] *    +1.52 [ -0.00,  +3.04]
+2026-10-07_21-43-26         9-shot mean (baseline)    0.0195                                                    
+2026-10-07_21-43-26          hybrid (z=6, wmax=20)    0.0192    +1.73 [ -1.15,  +4.24]                          
+2026-10-07_21-43-26 combined, ridge on pooled runs    0.0183  +5.93 [ +3.39,  +8.51] *  +4.27 [ +2.80,  +5.73] *
+2026-10-07_21-43-26               GRU, pooled runs    0.0186  +4.60 [ +1.76,  +7.00] *  +2.92 [ +1.49,  +4.43] *
+2026-10-07_21-43-26  GRU, pooled runs, charge only    0.0186  +4.54 [ +1.56,  +7.16] *  +2.85 [ +1.31,  +4.47] *
+2026-10-07_21-43-26           GRU, other runs only    0.0186  +4.79 [ +2.04,  +7.13] *  +3.11 [ +1.82,  +4.48] *
 2026-10-08_15-42-27         9-shot mean (baseline)    0.0122                                                    
-2026-10-08_15-42-27          hybrid (z=6, wmax=20)    0.0119  +2.46 [ +0.93,  +3.67] *                          
-2026-10-08_15-42-27 combined, ridge on pooled runs    0.0118  +3.29 [ +1.72,  +4.58] *    +0.85 [ -0.50,  +2.11]
-2026-10-08_15-42-27               GRU, pooled runs    0.0119  +3.08 [ +1.45,  +4.49] *    +0.63 [ -0.55,  +1.76]
-2026-10-08_15-42-27  GRU, pooled runs, charge only    0.0119  +2.38 [ +0.53,  +3.89] *    -0.08 [ -1.38,  +1.15]
-2026-10-08_15-42-27           GRU, other runs only    0.0118  +3.69 [ +2.24,  +4.88] *  +1.26 [ +0.30,  +2.22] *
+2026-10-08_15-42-27          hybrid (z=6, wmax=20)    0.0119  +2.46 [ +1.01,  +3.74] *                          
+2026-10-08_15-42-27 combined, ridge on pooled runs    0.0119  +3.01 [ +1.51,  +4.47] *    +0.56 [ -0.90,  +1.99]
+2026-10-08_15-42-27               GRU, pooled runs    0.0118  +3.27 [ +1.86,  +4.72] *    +0.83 [ -0.22,  +1.87]
+2026-10-08_15-42-27  GRU, pooled runs, charge only    0.0120    +1.59 [ -0.50,  +3.54]    -0.90 [ -2.65,  +0.68]
+2026-10-08_15-42-27           GRU, other runs only    0.0118  +3.55 [ +2.27,  +4.71] *  +1.12 [ +0.18,  +2.09] *
 
-prediction intervals for "combined, ridge on pooled runs", nominal 90 %; forecasts made < 5 shots after a level change use the pooled training quantiles -17.3 / +31.7 % (527 forecasts)
+prediction intervals for "combined, ridge on pooled runs", nominal 90 %; forecasts made < 5 shots after a level change use the pooled training quantiles -15.1 / +386.5 % (71 forecasts)
                 run calibration  coverage %  mean width % of level  coverage, stable %  width, stable %  coverage, after change %
-2026-10-09_07-46-07     rolling        88.7                   13.3                90.1             12.3                      78.7
-2026-10-09_07-46-07       fixed        93.3                   15.7                94.6             14.8                      82.0
-2026-10-08_21-11-47     rolling        89.7                   10.1                89.7             10.1                       NaN
-2026-10-08_21-11-47       fixed        91.0                   10.5                91.0             10.5                       NaN
-2026-10-08_00-08-19     rolling        87.1                   22.5                90.5             20.1                      80.8
-2026-10-08_00-08-19       fixed        73.6                   15.8                78.1             13.8                      75.0
-2026-10-07_21-43-26     rolling        87.7                   29.1                87.7             29.1                       NaN
-2026-10-07_21-43-26       fixed        85.7                   26.7                85.7             26.7                       NaN
-2026-10-08_15-42-27     rolling        91.9                   54.2                94.0             55.0                       NaN
-2026-10-08_15-42-27       fixed        84.6                   42.2                85.2             42.2                       NaN
+2026-10-09_07-46-07     rolling        90.0                   14.2                90.0             12.3                       NaN
+2026-10-09_07-46-07       fixed        83.6                   12.0                83.6             10.1                       NaN
+2026-10-08_21-11-47     rolling        89.8                   10.1                89.8             10.1                       NaN
+2026-10-08_21-11-47       fixed        91.1                   10.5                91.1             10.5                       NaN
+2026-10-08_00-08-19     rolling        89.4                   12.9                89.5             13.0                       NaN
+2026-10-08_00-08-19       fixed        87.6                   12.2                87.7             12.2                       NaN
+2026-10-07_21-43-26     rolling        87.2                   32.2                87.2             32.2                       NaN
+2026-10-07_21-43-26       fixed        82.6                   28.0                82.6             28.0                       NaN
+2026-10-08_15-42-27     rolling        91.9                   54.2                93.8             55.1                       NaN
+2026-10-08_15-42-27       fixed        83.9                   42.0                84.6             42.0                       NaN
 -> results/uncertainty/interval_2026-10-09_07-46-07.png
 -> results/uncertainty/interval_2026-10-08_21-11-47.png
 -> results/uncertainty/interval_2026-10-08_00-08-19.png

@@ -1,49 +1,49 @@
-2026-10-07_21-43-26: 7127 shots, test from shot 6414 (713 shots, 713 scored); 10 dropouts, 0 BCM-wrong shots
+2026-10-07_21-43-26: 6027 shots, test from shot 6524 (603 shots, 603 scored); 0 dropouts, 0 BCM-wrong shots
 
 1. rolling mean of the last W good shots: test MAE (nC) per horizon; * = window picked on the train part
    W    h=1     h=2     h=5     h=10    h=20    h=50    
-   1    0.0251  0.0256  0.0256  0.0265  0.0262  0.0265  
-   3    0.0208* 0.0213* 0.0222  0.0221  0.0218  0.0217  
-   5    0.0201  0.0204  0.0211  0.0210  0.0209  0.0204  
-   9    0.0198  0.0200  0.0201* 0.0199* 0.0198* 0.0196  
-   20   0.0189  0.0189  0.0192  0.0190  0.0188  0.0190* 
-   50   0.0184  0.0185  0.0185  0.0184  0.0185  0.0189  
-   100  0.0185  0.0186  0.0186  0.0186  0.0187  0.0189  
-   200  0.0187  0.0187  0.0188  0.0188  0.0188  0.0190  
-   500  0.0192  0.0192  0.0192  0.0192  0.0192  0.0194  
+   1    0.0241  0.0251  0.0253  0.0267  0.0260  0.0261  
+   3    0.0203  0.0211  0.0222  0.0223  0.0221  0.0216  
+   5    0.0198  0.0204  0.0209  0.0210  0.0209  0.0201  
+   9    0.0195  0.0199  0.0199  0.0199  0.0197  0.0194  
+   20   0.0187  0.0188  0.0190  0.0188  0.0185  0.0188  
+   50   0.0182* 0.0182* 0.0182* 0.0182* 0.0182* 0.0187  
+   100  0.0183  0.0183  0.0183  0.0184  0.0184  0.0187* 
+   200  0.0185  0.0186  0.0186  0.0186  0.0187  0.0189  
+   500  0.0192  0.0192  0.0192  0.0192  0.0193  0.0195  
 
 2. ridge on past charge + laser + step vs the 9-shot mean (test region)
        MAE      R2  baseline_MAE    dMAE  coverage  dMAE %  tuned W  tuned MAE
 h                                                                             
-1   0.0212 -0.2199        0.0198 -0.0014       1.0 -6.8152        3     0.0208
-2   0.0206 -0.1844        0.0200 -0.0006       1.0 -2.7693        3     0.0213
-5   0.0202 -0.1112        0.0201 -0.0001       1.0 -0.6205        9     0.0201
-10  0.0196 -0.0680        0.0199  0.0003       1.0  1.3131        9     0.0199
-20  0.0193 -0.0443        0.0198  0.0004       1.0  2.2168        9     0.0198
-50  0.0196 -0.0842        0.0196 -0.0001       1.0 -0.2881       20     0.0190
+1   0.0179  0.0755        0.0195  0.0016       1.0  8.0609       50     0.0182
+2   0.0183  0.0249        0.0199  0.0016       1.0  7.9803       50     0.0182
+5   0.0184  0.0217        0.0199  0.0016       1.0  7.9087       50     0.0182
+10  0.0183  0.0128        0.0199  0.0015       1.0  7.7364       50     0.0182
+20  0.0184  0.0124        0.0197  0.0013       1.0  6.6338       50     0.0182
+50  0.0188 -0.0067        0.0194  0.0006       1.0  3.1428      100     0.0187
 
    largest standardised ridge coefficients (nC per std):
-   h=1   q1 +0.029  lab1 +0.017  clex1 -0.011  q200 +0.011
-   h=10  q200 +0.168  q50 -0.074  clex50 +0.065  lab50 +0.033
-   h=50  q200 +0.249  q50 -0.105  clex50 +0.095  clex9 +0.029
+   h=1   q200 +0.004  q50 +0.002  clex1 +0.002  clex9 +0.001
+   h=10  q200 +0.004  q50 +0.002  q20 +0.001  clex9 +0.001
+   h=50  q200 +0.004  q50 +0.002  clex50 +0.001  clex1 +0.001
 
-autocorrelation of (charge - 9-shot mean): lag1 +0.681, lag5 -0.105, lag20 -0.008
+autocorrelation of (charge - 9-shot mean): lag1 +0.071, lag5 -0.056, lag20 +0.004
 
-3. test MAE (nC) split by regime: 713 steady shots, 0 within 20 shots of a level change
-   h=1    9-shot mean: steady 0.0198 change nan  mean W=3: steady 0.0208 change nan  ridge: steady 0.0212 change nan
-   h=5    9-shot mean: steady 0.0201 change nan  mean W=9: steady 0.0201 change nan  ridge: steady 0.0202 change nan
-   h=10   9-shot mean: steady 0.0199 change nan  mean W=9: steady 0.0199 change nan  ridge: steady 0.0196 change nan
+3. test MAE (nC) split by regime: 603 steady shots, 0 within 20 shots of a level change
+   h=1    9-shot mean: steady 0.0195 change nan  mean W=50: steady 0.0182 change nan  ridge: steady 0.0179 change nan
+   h=5    9-shot mean: steady 0.0199 change nan  mean W=50: steady 0.0182 change nan  ridge: steady 0.0184 change nan
+   h=10   9-shot mean: steady 0.0199 change nan  mean W=50: steady 0.0182 change nan  ridge: steady 0.0183 change nan
 -> results/2026-10-07_21-43-26/next_shot.png
 
-5. next-shot residual = measured - predicted, 6405 stable shots of the whole run (skew SE 0.03, excess-kurtosis SE 0.06; Gaussian: both 0)
+5. next-shot residual = measured - predicted, 5988 stable shots of the whole run (skew SE 0.03, excess-kurtosis SE 0.06; Gaussian: both 0)
                  model         shots    n  mean   std   MAE  rel std %  skew  ex.kurt
-9-shot mean (baseline)       all, nC 6405   0.0 0.020 0.015      8.181 0.560    5.772
-9-shot mean (baseline)         ~1 nC 6405   0.0 0.020 0.015      8.181 0.560    5.772
-9-shot mean (baseline) all, relative 6405   NaN   NaN   NaN      8.181 0.236    1.071
-           3-shot mean       all, nC 6405   0.0 0.021 0.016      8.783 0.452    5.174
-           3-shot mean         ~1 nC 6405   0.0 0.021 0.016      8.783 0.452    5.174
-           3-shot mean all, relative 6405   NaN   NaN   NaN      8.783 0.162    0.925
-   ridge (out-of-fold)       all, nC 6405   0.0 0.021 0.016      8.944 0.408    4.414
-   ridge (out-of-fold)         ~1 nC 6405   0.0 0.021 0.016      8.944 0.408    4.414
-   ridge (out-of-fold) all, relative 6405   NaN   NaN   NaN      8.944 0.134    0.832
+9-shot mean (baseline)       all, nC 5988   0.0 0.019 0.015      8.341 0.262    1.195
+9-shot mean (baseline)         ~1 nC 5988   0.0 0.019 0.015      8.341 0.262    1.195
+9-shot mean (baseline) all, relative 5988   NaN   NaN   NaN      8.341 0.204    0.801
+          50-shot mean       all, nC 5988   0.0 0.018 0.014      8.034 0.291    1.419
+          50-shot mean         ~1 nC 5988   0.0 0.018 0.014      8.034 0.291    1.419
+          50-shot mean all, relative 5988   NaN   NaN   NaN      8.034 0.212    0.960
+   ridge (out-of-fold)       all, nC 5988  -0.0 0.018 0.014      7.959 0.295    1.352
+   ridge (out-of-fold)         ~1 nC 5988  -0.0 0.018 0.014      7.959 0.295    1.352
+   ridge (out-of-fold) all, relative 5988   NaN   NaN   NaN      7.959 0.211    0.932
 -> results/2026-10-07_21-43-26/residuals_stable.png

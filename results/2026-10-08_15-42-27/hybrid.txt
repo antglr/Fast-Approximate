@@ -1,36 +1,36 @@
-2026-10-08_15-42-27: jitter (train, stable) charge 11.90 %, lab meter 1.42 %
+2026-10-08_15-42-27: jitter (train, stable) charge 11.94 %, lab meter 1.42 %
 
 next-shot MAE (nC). test = last 10 % (1210 scored: 480 stable, 0 within 20 shots after a level change); "run stable" = stable shots of the whole run (train + test)
-                              model  train MAE  test MAE changes test changes  test dMAE %  test: stable test: after change run stable ~5.5 nC run stable ~10 nC
-             9-shot mean (baseline)     0.0114    0.0122                            0.0000        0.0123                                                        
-                        3-shot mean     0.0124    0.0134                           -9.1967        0.0136                                                        
-                       20-shot mean     0.0112    0.0119                            2.4617        0.0118                                                        
-      hybrid, charge (z=8, wmax=30)     0.0111    0.0119    33.0          0.0       2.6433        0.0117                                                        
-hybrid, charge+laser (z=8, wmax=50)     0.1129    0.1110     1.0          0.0    -806.9465        0.1166                                                        
-   hybrid, charge x2 (z=3, wmax=30)     0.0110    0.0119    26.0          1.0       2.7348        0.0117                                                        
+                               model  train MAE  test MAE changes test changes  test dMAE %  test: stable test: after change run stable ~5.5 nC run stable ~10 nC
+              9-shot mean (baseline)     0.0114    0.0122                            0.0000        0.0123                                                        
+                         3-shot mean     0.0124    0.0134                           -9.1967        0.0136                                                        
+                        20-shot mean     0.0111    0.0119                            2.4617        0.0118                                                        
+       hybrid, charge (z=8, wmax=30)     0.0111    0.0119    31.0          0.0       2.6433        0.0117                                                        
+hybrid, charge+laser (z=8, wmax=100)     0.1148    0.1110     1.0          0.0    -806.9465        0.1166                                                        
+    hybrid, charge x2 (z=3, wmax=30)     0.0110    0.0119    27.0          1.0       2.8001        0.0117                                                        
 
 train MAE over the grid (rows z, columns wmax):
   charge
       9       20      30      50      100
-3  0.0120  0.0117  0.0116  0.0116  0.0117
-4  0.0116  0.0113  0.0112  0.0112  0.0114
+3  0.0120  0.0117  0.0116  0.0116  0.0116
+4  0.0116  0.0113  0.0112  0.0112  0.0113
 5  0.0114  0.0112  0.0111  0.0111  0.0113
 6  0.0114  0.0112  0.0111  0.0111  0.0114
-8  0.0114  0.0112  0.0111  0.0111  0.0114
+8  0.0114  0.0111  0.0111  0.0111  0.0114
   charge+laser
       9       20      30      50      100
-3  0.1135  0.1134  0.1134  0.1134  0.1134
-4  0.1154  0.1153  0.1153  0.1153  0.1153
-5  0.1154  0.1153  0.1153  0.1153  0.1153
-6  0.1154  0.1153  0.1153  0.1153  0.1153
-8  0.1129  0.1129  0.1129  0.1129  0.1129
+3  0.1154  0.1154  0.1154  0.1154  0.1154
+4  0.1174  0.1174  0.1174  0.1173  0.1173
+5  0.1174  0.1174  0.1174  0.1173  0.1173
+6  0.1174  0.1174  0.1174  0.1173  0.1173
+8  0.1149  0.1149  0.1149  0.1149  0.1148
   charge x2
       9       20      30      50      100
 3  0.0114  0.0111  0.0110  0.0110  0.0112
-4  0.0114  0.0112  0.0111  0.0111  0.0113
-5  0.0114  0.0112  0.0111  0.0111  0.0114
+4  0.0114  0.0111  0.0110  0.0111  0.0113
+5  0.0114  0.0111  0.0111  0.0111  0.0114
 6  0.0114  0.0112  0.0111  0.0111  0.0114
-8  0.0114  0.0112  0.0111  0.0113  0.0115
+8  0.0114  0.0112  0.0111  0.0112  0.0115
 -> results/2026-10-08_15-42-27/hybrid_next_shot.png
 
 test MAE, charge variant, over the grid (rows z, columns wmax) - for sensitivity, not selection:

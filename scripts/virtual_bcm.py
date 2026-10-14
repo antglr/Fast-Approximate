@@ -36,7 +36,7 @@ def scope_amp(tables, run):
     amp = clean @ tmpl / (tmpl @ tmpl)
     bad = np.r_[False, np.all(sc[1:] == sc[:-1], 1)] | ~L['scope_acquired'].astype(bool) | L['scope_saturated'].astype(bool)
     amp[bad] = np.nan
-    return align(amp, pulse_ids(L['t'], L['chunk']), stamp_shift(L['scope_off']))   # stamp alignment: same-shot r peaks
+    return pd.Series(align(amp, pulse_ids(L['t'], L['chunk']), stamp_shift(L['scope_off'])), L['shot'])   # stamp alignment: same-shot r peaks
 
 
 def same_shot(r, names):
@@ -62,7 +62,7 @@ def main():
         # only this pulse's own readings (NaN where missing, feature 0): a filled value is an older pulse's
         x = r['x']
         r['inst'] = pd.DataFrame({k: x[k].where(x[k + '_ok']) for k in ('lab', 'clex', 'step')}, r['df'].index)
-        r['inst']['scope'] = scope_amp(tables, run)
+        r['inst']['scope'] = scope_amp(tables, run)          # aligns on the shot index (load_run trims to the clean chunks)
         r['inst'].loc[r['inst'].scope <= 0, 'scope'] = np.nan
         with np.errstate(invalid='ignore', divide='ignore'):
             r['ly'] = np.log(r['q'].shift(-1).values / r['p'].values)                 # target: log(Q[i+1] / level)
