@@ -193,7 +193,7 @@ def train(ds, epochs=100, batch=10, lr=2e-3, aux_weight=1.0):
 def spot_stats(img):
     """img: (H, W) tensor. Returns (cx, cy, sigma) of the spot in pixels.
     The image is thresholded at half its maximum so background noise does not bias the result."""
-    img = (img - 0.5 * img.max()).clamp(min=0)
+    img = (img - 0.6 * img.max()).clamp(min=0)
     tot = img.sum() + 1e-8
     ys = torch.arange(H, dtype=img.dtype, device=img.device).view(-1, 1)
     xs = torch.arange(W, dtype=img.dtype, device=img.device).view(1, -1)
@@ -355,15 +355,15 @@ if __name__ == "__main__":
     CROP = "center"
     folder = "../test_data/" 
     data = np.concatenate([combiner(folder)['BTV0125'][k]['image2D'] for k in range(3)], axis=0)
-    test_data = combiner(folder)['BTV0125'][3]['image2D'][:1,:,:]
+    test_data = combiner(folder)['BTV0125'][3]['image2D'][:3,:,:]
     ds = ImageSeries(data, crop=CROP)
     model = train(ds)
     ds_test = ImageSeries(test_data, crop=CROP)
 
     diagnose(model, ds_test)
 
-#    evaluate_reconstruction(model, ds_test)           # decoding metrics
-#    plot_reconstructions(model, ds_test)              # reconstructions.png
-#    plot_interpolation(model, ds_test, i=0, j=50)     # interpolation.png
+    evaluate_reconstruction(model, ds_test)           # decoding metrics
+    plot_reconstructions(model, ds_test)              # reconstructions.png
+    plot_interpolation(model, ds_test, i=0, j=2)     # interpolation.png
     # z = extract_latents(model, ds)               # (100, 16)
     # lstm, stats = train_lstm(z)
