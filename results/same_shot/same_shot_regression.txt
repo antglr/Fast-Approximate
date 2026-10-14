@@ -1,0 +1,114 @@
+test regions (last 10 % of each clean segment)
+             run                regime     n   level
+seg                                                 
+0    10-07_21-43            low charge   603   0.245
+1    10-08_00-08  high, non-repetitive  1940   4.806
+2    10-08_15-42            low charge    20   0.138
+3    10-08_15-42            low charge   707   0.132
+4    10-08_15-42            low charge   448   0.112
+5    10-08_21-11      high, repetitive  1993   5.878
+6    10-09_07-46  high, non-repetitive   410   5.656
+7    10-09_07-46  high, non-repetitive   200  10.368
+
+rel % (MAE in % of the level), per test segment
+seg                                                    0      1      2      3      4     5      6      7
+features                  mode                                                                          
+lab only                  absolute                 17.22   3.16  14.59  16.48  18.14  2.29   1.37   4.38
+                          per-segment calibration   9.94   3.22   7.73  11.72  16.69  2.29   1.41   4.61
+                          new segment              39.23   3.23  14.61  16.82  21.71   NaN   1.29   5.81
+                          new segment, calibrated   9.50   3.11   8.25  11.30  16.80   NaN   1.23   4.68
+reduced set               absolute                 19.17   3.31  14.89  15.95  14.50  1.47   2.26   4.28
+                          per-segment calibration   5.71   2.44   4.51   7.42   8.45  1.47   1.64   3.40
+                          new segment              59.96  72.34  15.14  26.69  24.06   NaN  10.35  27.06
+                          new segment, calibrated   5.80   1.67   4.64   7.34   8.50   NaN   1.77   3.53
+reduced set + clex, scope absolute                 22.88   2.51  14.05  15.53  16.34  1.46   1.89   3.23
+                          per-segment calibration   5.92   2.48   4.77   7.40   8.00  1.46   1.67   3.17
+                          new segment              60.01  12.78  14.41  25.16  28.70   NaN  12.00  13.73
+                          new segment, calibrated   5.91   1.65   4.72   7.38   7.99   NaN   1.78   3.21
+constant                  absolute                 43.32   8.92   4.58  10.40  25.19  7.83   7.92  49.76
+                          per-segment calibration  11.68   5.11   5.83  12.45  19.83  7.83   3.41   4.62
+
+jitter r (jitter r), per test segment
+seg                                                    0      1      3      4      5      6      7
+features                  mode                                                                    
+lab only                  absolute                 0.421  0.315  0.155  0.198  0.455  0.814  0.665
+                          per-segment calibration  0.419  0.316  0.158  0.214  0.455  0.816  0.671
+                          new segment              0.410  0.316  0.155  0.208    NaN  0.815  0.667
+                          new segment, calibrated  0.419  0.317  0.158  0.211    NaN  0.814  0.672
+reduced set               absolute                 0.481  0.358  0.207  0.256  0.790  0.570  0.825
+                          per-segment calibration  0.856  0.619  0.562  0.464  0.790  0.719  0.903
+                          new segment              0.857  0.628  0.237  0.175    NaN  0.607  0.898
+                          new segment, calibrated  0.856  0.604  0.564  0.461    NaN  0.671  0.884
+reduced set + clex, scope absolute                 0.465  0.607  0.209  0.265  0.791  0.672  0.924
+                          per-segment calibration  0.846  0.593  0.562  0.543  0.791  0.719  0.911
+                          new segment              0.850  0.622  0.232  0.193    NaN  0.510  0.929
+                          new segment, calibrated  0.850  0.609  0.561  0.545    NaN  0.690  0.904
+constant                  absolute                   NaN    NaN    NaN    NaN    NaN    NaN    NaN
+                          per-segment calibration    NaN    NaN    NaN    NaN    NaN    NaN    NaN
+
+MAE (MAE), per test segment
+seg                                                     0       1       2       3       4       5       6       7
+features                  mode                                                                                   
+lab only                  absolute                 0.0423  0.1518  0.0202  0.0217  0.0203  0.1346  0.0776  0.4543
+                          per-segment calibration  0.0244  0.1546  0.0107  0.0154  0.0187  0.1346  0.0795  0.4780
+                          new segment              0.0963  0.1550  0.0202  0.0221  0.0243     NaN  0.0730  0.6021
+                          new segment, calibrated  0.0233  0.1492  0.0114  0.0149  0.0188     NaN  0.0696  0.4851
+reduced set               absolute                 0.0471  0.1590  0.0206  0.0210  0.0163  0.0865  0.1277  0.4439
+                          per-segment calibration  0.0140  0.1175  0.0062  0.0098  0.0095  0.0865  0.0926  0.3521
+                          new segment              0.1472  3.4770  0.0210  0.0351  0.0270     NaN  0.5856  2.8054
+                          new segment, calibrated  0.0142  0.0801  0.0064  0.0097  0.0095     NaN  0.1004  0.3662
+reduced set + clex, scope absolute                 0.0562  0.1206  0.0194  0.0204  0.0183  0.0857  0.1071  0.3348
+                          per-segment calibration  0.0145  0.1192  0.0066  0.0097  0.0090  0.0857  0.0942  0.3286
+                          new segment              0.1473  0.6140  0.0199  0.0331  0.0322     NaN  0.6788  1.4238
+                          new segment, calibrated  0.0145  0.0794  0.0065  0.0097  0.0089     NaN  0.1005  0.3324
+constant                  absolute                 0.1063  0.4288  0.0063  0.0137  0.0282  0.4601  0.4480  5.1589
+                          per-segment calibration  0.0287  0.2455  0.0081  0.0164  0.0222  0.4601  0.1928  0.4789
+
+error split, test regions: residual log(pred / BCM) in %, slow = its 51-shot centred median, fast = the rest;
+jitter explained = 1 - fast mean square / the BCM's own fast mean square
+BCM fast rms % per segment: {0: 9.5, 1: 3.61, 2: 6.21, 3: 13.09, 4: 13.42, 5: 2.99, 6: 2.72, 7: 9.03}
+
+slow rms %
+seg                                                    0     1    2     3     4    5     6     7
+model                                                                                           
+constant, per-segment calibration                   11.1   5.0  3.6  10.5  20.5  8.7   3.2   2.2
+lab only, per-segment calibration                    8.6   1.6  1.5   8.1  15.9  1.2   1.0   2.1
+reduced set + clex, scope, per-segment calibration   5.3   1.1  1.6   2.9   1.6  0.8   0.6   1.1
+reduced set + clex, scope, new segment, calibrated   5.4   0.7  1.5   2.9   1.3  NaN   0.6   0.9
+reduced set + clex, scope, new segment              91.7  12.0  4.7  21.0  27.0  NaN  11.5  14.7
+
+fast rms %
+seg                                                   0    1     2     3     4    5    6     7
+model                                                                                         
+constant, per-segment calibration                   9.5  3.6   6.2  13.1  13.4  3.0  2.7   9.0
+lab only, per-segment calibration                   9.2  3.9  10.0  13.9  13.7  2.9  1.6  10.5
+reduced set + clex, scope, per-segment calibration  5.2  3.0   6.3  11.2  11.4  1.8  2.1   4.4
+reduced set + clex, scope, new segment, calibrated  5.1  3.8   6.3  11.2  11.4  NaN  2.2   4.5
+reduced set + clex, scope, new segment              5.1  3.7  16.1  18.6  16.2  NaN  2.8   4.4
+
+slow share %
+seg                                                    0     1     2     3     4     5     6     7
+model                                                                                             
+constant, per-segment calibration                   57.5  65.6  25.3  39.1  70.0  89.4  58.1   5.7
+lab only, per-segment calibration                   46.7  14.9   2.1  25.4  57.2  15.4  29.1   3.8
+reduced set + clex, scope, per-segment calibration  50.8  11.7   6.3   6.5   1.9  15.4   7.8   5.6
+reduced set + clex, scope, new segment, calibrated  52.4   3.7   5.5   6.3   1.4   NaN   8.0   4.2
+reduced set + clex, scope, new segment              99.7  91.3   7.9  55.9  73.5   NaN  94.5  91.6
+
+jitter explained %
+seg                                                    0     1      2      3     4     5     6     7
+model                                                                                               
+constant, per-segment calibration                    0.0  -0.0    0.0    0.0   0.0   0.0  -0.0   0.0
+lab only, per-segment calibration                    6.3 -16.3 -161.0  -12.6  -4.8   5.4  67.1 -34.4
+reduced set + clex, scope, per-segment calibration  69.9  32.4   -3.6   27.1  28.3  62.9  43.0  76.1
+reduced set + clex, scope, new segment, calibrated  70.7  -8.2   -3.7   26.9  28.3   NaN  36.0  75.1
+reduced set + clex, scope, new segment              70.8  -5.2 -572.3 -102.7 -46.0   NaN  -3.1  76.0
+
+per-segment calibration, change of log Q per std of each feature (%), largest 10
+  reduced set, low charge: SVD_s1 +9.42  BTV_intensity +8.55  SVD_s5 +7.19  SVD_s4 -5.82  BTV_sigma_major +2.05  SVD_s6 -1.66  BTV_amplitude +1.04  BTV_mean_x -0.92  BTV_ellipticity -0.57  BTV_sigma_minor +0.55
+  reduced set, high, repetitive: BTV_intensity +5.26  lab +1.98  BTV_amplitude -1.97  BTV_sigma_minor -1.30  BTV_sigma_major -0.95  SVD_s2 -0.76  BTV_mean_x -0.65  SVD_s1 +0.64  SVD_s4 +0.53  step +0.37
+  reduced set, high, non-repetitive: SVD_s4 +11.35  SVD_s6 -11.20  SVD_s3 -4.41  SVD_s5 +2.93  BTV_intensity +2.17  step +2.03  SVD_s1 +1.75  lab +1.74  camera missing -1.32  BTV_sigma_major +1.16
+  reduced set + clex, scope, low charge: clex +6.05  BTV_intensity +5.97  SVD_s1 +5.88  SVD_s5 +4.35  SVD_s4 -3.16  SVD_s6 -1.77  BTV_sigma_major +1.58  BTV_amplitude +1.39  BTV_sigma_minor +0.67  SVD_s2 +0.59
+  reduced set + clex, scope, high, repetitive: BTV_intensity +5.19  BTV_amplitude -1.85  BTV_sigma_minor -1.26  lab +1.26  BTV_sigma_major -0.94  SVD_s2 -0.73  clex +0.70  BTV_mean_x -0.67  SVD_s4 +0.51  SVD_s1 +0.46
+  reduced set + clex, scope, high, non-repetitive: SVD_s6 -10.25  SVD_s4 +9.36  SVD_s3 -3.68  SVD_s5 +3.44  step +1.88  BTV_intensity +1.84  clex +1.82  SVD_s1 +1.44  camera missing -1.29  BTV_sigma_major +0.98
+-> results/same_shot/same_shot_regression.png

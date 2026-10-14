@@ -1,0 +1,109 @@
+low charge, ridge, current shot: alpha 38.6
+low charge, ridge, + past BCM: alpha 38.6
+low charge: 14368 training, 1598 early-stopping shots
+  RNN, L=1: epochs [14, 28, 14], 5 s
+  GRU, L=1: epochs [23, 21, 16], 4 s
+  RNN, L=16: epochs [28, 21, 24], 14 s
+  GRU, L=16: epochs [23, 25, 14], 38 s
+  RNN, L=64: epochs [28, 21, 20], 58 s
+  GRU, L=64: epochs [23, 24, 22], 112 s
+  GRU, L=16, past BCM: epochs [24, 15, 19], 23 s
+  ridge, current shot + GRU, L=1: epochs [15, 18, 9], 3 s
+  ridge, current shot + GRU, L=16: epochs [13, 13, 14], 14 s
+  ridge, + past BCM + GRU, L=16, past BCM: epochs [13, 12, 19], 17 s
+  ridge, + past BCM + GRU, L=64, past BCM: epochs [24, 12, 18], 85 s
+high, repetitive, ridge, current shot: alpha 0.0053
+high, repetitive, ridge, + past BCM: alpha 0.0053
+high, repetitive: 16133 training, 1793 early-stopping shots
+  RNN, L=1: epochs [28, 39, 25], 4 s
+  GRU, L=1: epochs [29, 20, 20], 4 s
+  RNN, L=16: epochs [27, 22, 23], 11 s
+  GRU, L=16: epochs [25, 40, 20], 35 s
+  RNN, L=64: epochs [27, 22, 23], 58 s
+  GRU, L=64: epochs [33, 37, 20], 171 s
+  GRU, L=16, past BCM: epochs [30, 40, 27], 53 s
+  ridge, current shot + GRU, L=1: epochs [16, 23, 17], 5 s
+  ridge, current shot + GRU, L=16: epochs [27, 19, 29], 36 s
+  ridge, + past BCM + GRU, L=16, past BCM: epochs [20, 39, 28], 39 s
+  ridge, + past BCM + GRU, L=64, past BCM: epochs [32, 39, 31], 151 s
+high, non-repetitive, ridge, current shot: alpha 7.28
+high, non-repetitive, ridge, + past BCM: alpha 7.28
+high, non-repetitive: 20632 training, 2294 early-stopping shots
+  RNN, L=1: epochs [23, 18, 14], 3 s
+  GRU, L=1: epochs [19, 23, 12], 4 s
+  RNN, L=16: epochs [31, 20, 28], 17 s
+  GRU, L=16: epochs [23, 23, 25], 30 s
+  RNN, L=64: epochs [31, 20, 28], 53 s
+  GRU, L=64: epochs [30, 24, 25], 174 s
+  GRU, L=16, past BCM: epochs [29, 37, 24], 47 s
+  ridge, current shot + GRU, L=1: epochs [25, 17, 12], 3 s
+  ridge, current shot + GRU, L=16: epochs [20, 24, 18], 37 s
+  ridge, + past BCM + GRU, L=16, past BCM: epochs [35, 23, 18], 44 s
+  ridge, + past BCM + GRU, L=64, past BCM: epochs [26, 37, 24], 156 s
+
+test regions (last 10 % of each clean segment); target = log(Q / geometric mean of the previous 50 good BCM readings)
+             run                regime     n   level  target rms %
+seg                                                               
+0    10-07_21-43            low charge   603   0.245         9.533
+1    10-08_00-08  high, non-repetitive  1940   4.806         3.871
+2    10-08_15-42            low charge    20   0.138         6.352
+3    10-08_15-42            low charge   707   0.132        13.471
+4    10-08_15-42            low charge   448   0.112        14.088
+5    10-08_21-11      high, repetitive  1993   5.878         3.202
+6    10-09_07-46  high, non-repetitive   410   5.656         2.763
+7    10-09_07-46  high, non-repetitive   200  10.368         9.147
+
+jitter explained %
+seg                                         0     1     2     3     4     5     6     7
+model                                                                                  
+trailing level only                       0.0   0.0   0.0   0.0   0.0   0.0   0.0   0.0
+ridge, current shot                      68.1  63.3  13.0  28.3  38.5  74.1  79.0  89.0
+ridge, + past BCM                        67.8  63.5  13.1  29.1  38.7  74.0  79.1  88.6
+RNN, L=1                                 73.6  82.7  26.2  29.6  45.7  88.6  91.7  38.9
+GRU, L=1                                 73.6  83.3  22.6  28.9  49.3  88.6  91.9  41.9
+RNN, L=16                                72.6  83.3  23.1  29.7  45.4  88.2  92.7  36.5
+GRU, L=16                                73.4  83.3  23.2  28.3  47.2  88.5  93.5  44.4
+RNN, L=64                                72.6  83.3  23.2  29.7  45.2  88.2  93.1  36.5
+GRU, L=64                                73.6  83.2  21.9  27.8  47.5  88.4  93.7  44.5
+GRU, L=16, past BCM                      73.2  83.9  26.3  29.6  48.5  88.9  93.6  44.2
+ridge, current shot + GRU, L=1           73.6  83.9  20.6  29.2  49.1  88.6  91.3  90.9
+ridge, current shot + GRU, L=16          73.2  83.9  22.5  29.1  47.9  88.3  92.4  92.1
+ridge, + past BCM + GRU, L=16, past BCM  72.9  84.4  29.2  30.1  47.7  89.0  93.2  91.1
+ridge, + past BCM + GRU, L=64, past BCM  73.1  84.5  24.5  29.2  48.8  89.0  93.1  90.9
+
+rel % (MAE of exp(level + predicted jitter) in % of the level)
+seg                                         0     1     2     3      4     5     6     7
+model                                                                                   
+trailing level only                      7.40  2.98  4.96  9.39  10.46  2.47  2.16  4.13
+ridge, current shot                      4.07  1.76  4.53  7.14   7.94  1.18  1.01  1.68
+ridge, + past BCM                        4.08  1.76  4.56  7.12   7.93  1.19  1.00  1.71
+RNN, L=1                                 3.66  1.00  3.75  6.97   7.37  0.71  0.63  2.31
+GRU, L=1                                 3.69  0.98  3.85  7.01   7.00  0.71  0.62  2.25
+RNN, L=16                                3.70  0.98  3.89  7.00   7.35  0.72  0.58  2.28
+GRU, L=16                                3.70  0.98  3.93  7.02   7.26  0.72  0.55  2.18
+RNN, L=64                                3.70  0.98  3.90  7.00   7.37  0.72  0.57  2.27
+GRU, L=64                                3.71  1.00  3.97  7.04   7.23  0.73  0.55  2.22
+GRU, L=16, past BCM                      3.77  0.96  3.88  6.97   7.20  0.70  0.54  2.16
+ridge, current shot + GRU, L=1           3.68  0.97  4.04  7.01   7.06  0.71  0.63  1.53
+ridge, current shot + GRU, L=16          3.73  0.98  4.13  7.01   7.20  0.73  0.58  1.45
+ridge, + past BCM + GRU, L=16, past BCM  3.78  0.96  4.08  6.96   7.28  0.70  0.55  1.46
+ridge, + past BCM + GRU, L=64, past BCM  3.76  0.95  4.01  6.94   7.22  0.69  0.55  1.42
+
+MAE pC
+seg                                         0      1    2     3     4      5      6      7
+model                                                                                     
+trailing level only                      18.2  143.3  6.9  12.4  11.7  145.5  122.2  428.1
+ridge, current shot                      10.0   84.6  6.3   9.4   8.9   69.5   57.0  174.4
+ridge, + past BCM                        10.0   84.4  6.3   9.4   8.9   69.7   56.7  177.0
+RNN, L=1                                  9.0   48.1  5.2   9.2   8.3   41.7   35.5  239.0
+GRU, L=1                                  9.1   47.2  5.3   9.2   7.8   41.5   35.1  233.1
+RNN, L=16                                 9.1   47.0  5.4   9.2   8.2   42.5   33.0  236.0
+GRU, L=16                                 9.1   47.2  5.4   9.2   8.1   42.1   31.2  226.3
+RNN, L=64                                 9.1   47.0  5.4   9.2   8.3   42.4   32.2  235.5
+GRU, L=64                                 9.1   47.9  5.5   9.3   8.1   42.6   30.9  229.9
+GRU, L=16, past BCM                       9.3   46.1  5.4   9.2   8.1   41.1   30.5  223.8
+ridge, current shot + GRU, L=1            9.0   46.6  5.6   9.2   7.9   41.6   35.7  158.2
+ridge, current shot + GRU, L=16           9.1   46.9  5.7   9.2   8.1   42.7   32.8  150.2
+ridge, + past BCM + GRU, L=16, past BCM   9.3   46.3  5.6   9.2   8.2   41.0   31.3  151.5
+ridge, + past BCM + GRU, L=64, past BCM   9.2   45.7  5.6   9.1   8.1   40.8   31.0  147.0
+-> /home/xkc85723/Documents/Fast-Approximate/results/jitter_sequence/jitter_sequence.png

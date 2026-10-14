@@ -32,6 +32,10 @@ PY=python3 scripts/run_pipeline.sh 2026-10-09_07-46-07 data/h5 data/tables resul
 | `screen_variables.py` | Tests whether the notebook variables (klystron, gun field, magnets, climate, laser scope, camera) help the next-shot forecast |
 | `virtual_bcm.py` | Same-shot virtual BCM: shot n's charge from shot n's own laser readings (and camera, if present) plus the BCM history (below) |
 | `camera_features.py` | Puts the camera features from `extract_features.py` (`results/datasets/`) on the pulse grid, drops dark frames → `<run>_camera.npz` |
+| `same_shot_regression.py` | Same-shot charge from the reduced feature set alone (no BCM history), log-ridge per charge regime (below) |
+| `jitter_sequence.py` | Shot-to-shot jitter against the trailing BCM level, from the instruments' own jitter: ridge vs RNN vs GRU per regime (below) |
+| `bcm_noise_floor.py` | The BCM's own shot-to-shot noise (three-cornered hat: BCM, camera, step / clex / lab): the floor for the jitter models (below) |
+| `jitter_input_screen.py` | Screens laser-pulse shape and RF flat-top readings as extra jitter inputs (below): they add nothing |
 
 Run the scripts with `python -I`. The tables match the ones made from the pickles, except that the camera
 columns are left out.
@@ -493,3 +497,245 @@ ones, because level changes are where it should help. There are two ridges: one 
   nC drifts too: on run 2 it is 20 % worse than the hybrid. The laser ratio is still better on run 1.
 - **How the interpolation leak was found.** The first version overshot after big jumps up (30 nC predicted against
   18 nC). The interpolated meters ramped linearly across gaps after a jump, so shot n's "reading" was partly shot n+1's.
+
+## Same-shot charge from the reduced feature set, per regime (`same_shot_regression.py`, `results/same_shot/`)
+
+```bash
+python3 -I scripts/same_shot_regression.py data/tables results/same_shot 2026-10-09_07-46-07 2026-10-08_21-11-47 \
+    2026-10-08_00-08-19 2026-10-07_21-43-26 2026-10-08_15-42-27            # needs <run>_camera.npz (camera_features.py)
+```
+
+This is the first step of the model comparison: a baseline for how well the shot's own readings give its charge,
+with no BCM history and no forecasting.
+
+**Inputs:** the reduced feature set of `extract_features.py` on our pulse grid. The windowed beam-loading step stands
+in for `PGLA_drop`. A second set adds clex and the laser scope.
+- Positive readings enter as logs, because the charge scales with laser energy and the screen light with the charge.
+- A missing reading takes the segment's last one, plus a missing flag per instrument.
+
+**Model:** log Q = a ridge per regime. The regularisation is chosen by 5-fold CV over contiguous blocks.
+
+**Regimes (clean segments of `results/datasets`):**
+- low charge: 0, 2, 3, 4;
+- high, repetitive: 5;
+- high, non-repetitive: 1, 6, 7.
+
+**Split:** the first 90 % of each segment trains, the last 10 % tests.
+
+**Four ways to use a regime's segments:**
+- **absolute:** one intercept for the regime;
+- **per-segment calibration:** each segment's own intercept, from its training part, with shared slopes (fixed
+  effects);
+- **new segment:** a segment never seen; slopes and intercept come from the regime's other segments;
+- **new segment, calibrated:** slopes from the other segments, the intercept from this segment's training part.
+
+| MAE in % of the level, test regions | seg 0 (low) | seg 3 (low) | seg 4 (low) | seg 5 (rep.) | seg 1 (non-rep.) | seg 6 (non-rep.) | seg 7 (non-rep.) |
+|---|---|---|---|---|---|---|---|
+| level (nC) | 0.25 | 0.13 | 0.11 | 5.9 | 4.8 | 5.7 | 10.4 |
+| constant: the segment's training mean | 11.7 | 12.5 | 19.8 | 7.8 | 5.1 | 3.4 | 4.6 |
+| lab only, per-segment calibration | 9.9 | 11.7 | 16.7 | 2.3 | 3.2 | **1.4** | 4.6 |
+| reduced set, absolute | 19.2 | 16.0 | 14.5 | 1.5 | 3.3 | 2.3 | 4.3 |
+| **reduced set, per-segment calibration** | **5.7** | 7.4 | 8.5 | **1.5** | 2.4 | 1.6 | 3.4 |
+| reduced set + clex, scope, per-segment calibration | 5.9 | 7.4 | **8.0** | **1.5** | 2.5 | 1.7 | **3.2** |
+| reduced set + clex, scope, new segment | 60 | 25 | 29 | – | 12.8 | 12.0 | 13.7 |
+| reduced set + clex, scope, new segment, calibrated | 5.9 | 7.4 | **8.0** | – | **1.7** | 1.8 | **3.2** |
+
+Segment 2 has only 20 test shots, so it is left out of the table (it is in `same_shot_regression.txt`). The r of the
+detrended jitter is in the text file too.
+
+- **Calibration is the main problem, not the model.**
+  - With per-segment calibration the shot's own readings cut the error by a factor of 1.4–5 against the
+    segment's mean.
+  - Without it, a never-seen segment is off by 12–60 %, although the prediction has the right shape
+    (`same_shot_regression.png`). The camera's intensity per nC differs ~10× between runs, and the lab meter sits
+    before the low-charge attenuator.
+  - Fitting only the intercept on the new segment's own BCM fixes nearly all of it. Slopes learned on other segments
+    transfer.
+- **The regimes behave as expected:**
+  - **Repetitive (seg 5):** easiest. 1.5 %, jitter r 0.79, mostly the camera intensity and the lab meter.
+  - **Low charge:** 6–8 %, against a relative jitter of 8–12 %. The signal is in the camera and clex. The lab meter
+    alone does little there.
+  - **Non-repetitive:** 1.6–3.4 %.
+    - On seg 6 the lab meter alone is best: 1.4 %, against 1.6 % with the camera.
+    - On seg 1, slopes from 09_07 beat the ones trained with seg 1's own training part (1.7 % against 2.4 %). The
+      camera is noisier in that training part.
+- **Fixed effects also give the right slopes.** With one intercept per regime, the slopes partly explain the level
+  differences between segments, and the jitter r drops (seg 0: 0.48 against 0.86).
+- **The non-repetitive camera coefficients are suspect:** SVD s4 +11 % and SVD s6 −11 % per std, opposite in sign.
+  That is the collinear block that PLS or a group penalty should tame (next step).
+- **Seg 7's final jump to 18 nC is overshot** (~24 nC predicted). The log-linear map extrapolates beyond the
+  training range.
+
+- **Where the error is** (the error split at the end of `same_shot_regression.txt`). Each residual log(pred / BCM)
+  is split into a slow part (its 51-shot centred median) and the fast rest.
+  - With per-segment calibration, the slow part is 2–16 % of the mean-square error on every segment but seg 0
+    (51 %, a level offset). The model explains 27–76 % of the BCM's own shot-to-shot jitter: 63–76 % on segs 5 and
+    7, 32–43 % on segs 1 and 6, 27–28 % on segs 3 and 4, and 70 % on seg 0.
+  - For a never-seen, uncalibrated segment, the slow part is 56–100 %.
+  - So once a segment is calibrated, what is left is jitter. A plain-language write-up and the slow/fast plan are in
+    `../docs/charge_models_explained.md`.
+
+## Shot-to-shot jitter with sequence models (`jitter_sequence.py`, `results/jitter_sequence/`)
+
+```bash
+python3 -I scripts/jitter_sequence.py data/tables results/jitter_sequence 2026-10-09_07-46-07 2026-10-08_21-11-47 \
+    2026-10-08_00-08-19 2026-10-07_21-43-26 2026-10-08_15-42-27            # needs PyTorch and <run>_camera.npz; ~30 min
+```
+
+This is the fast-model step of the slow/fast plan in `../docs/charge_models_explained.md`. It is still same-shot:
+nothing is forecast.
+
+**Causal slow/fast split**, within each clean segment:
+- slow = the mean of the previous 50 readings (of the logs; linear for step, mean_x and tilt);
+- fast = the reading − slow.
+
+**Target:** log Q[n] − the mean log Q of the previous 50 good shots, i.e. the jitter against past BCM readings.
+- The level is that trailing mean, so the total charge = exp(level + predicted jitter).
+- This needs the BCM up to the previous shot. The `same_shot_regression.py` numbers do not, so the rel % below are
+  not comparable with them.
+
+**Inputs:** the fast parts of the reduced set + clex and scope, 0 where missing, plus a missing flag per instrument.
+The sequence models see the current shot and the L − 1 before it, within the segment.
+
+**Models,** one per regime, split as in `same_shot_regression.py`:
+- ridge on the current shot only, or with the last 16 BCM jitters added (past BCM);
+- `torch.nn.RNN` and `torch.nn.GRU` (32 hidden), set up as `gru_forecast.py`: L1 loss, zero-initialised output,
+  early stopping on the last 10 % of each segment's training part, 3 seeds averaged.
+
+**Jitter explained** = 1 − mean square of (target − prediction) / mean square of the target.
+
+| Test regions | seg 0 (low) | seg 3 (low) | seg 4 (low) | seg 5 (rep.) | seg 1 (non-rep.) | seg 6 (non-rep.) | seg 7 (non-rep.) |
+|---|---|---|---|---|---|---|---|
+| target rms (% of level) | 9.5 | 13.5 | 14.1 | 3.2 | 3.9 | 2.8 | 9.1 |
+| jitter explained: ridge, current shot | 68 | 28 | 39 | 74 | 63 | 79 | **89** |
+| jitter explained: RNN, L = 1 | **74** | **30** | 46 | **89** | 83 | 92 | 39 |
+| jitter explained: GRU, L = 1 | **74** | 29 | **49** | **89** | 83 | 92 | 42 |
+| jitter explained: GRU, L = 16 | 73 | 28 | 47 | **89** | 83 | **94** | 44 |
+| jitter explained: GRU, L = 64 | **74** | 28 | 48 | 88 | 83 | **94** | 45 |
+| MAE, % of level: trailing level only | 7.4 | 9.4 | 10.5 | 2.5 | 3.0 | 2.2 | 4.1 |
+| MAE, % of level: ridge, current shot | 4.1 | 7.1 | 7.9 | 1.2 | 1.8 | 1.0 | **1.7** |
+| MAE, % of level: GRU, L = 1 | 3.7 | 7.0 | **7.0** | **0.7** | **1.0** | 0.6 | 2.3 |
+| MAE, % of level: GRU, L = 16 | 3.7 | 7.0 | 7.3 | **0.7** | **1.0** | **0.55** | 2.2 |
+
+The RNN rows for L = 16 and 64 are within a point of the GRU's (`jitter_sequence.txt`). Seg 2 (20 test shots) is
+only in the text file.
+
+- **The gain is the nonlinearity, not the memory.** A one-shot RNN or GRU (L = 1) beats the ridge on every segment
+  but seg 7: 83 % against 63 % on seg 1, 89 % against 74 % on seg 5, and 92 % against 79 % on seg 6. Windows of 16
+  or 64 shots add at most 2 points (seg 6), as the forecasting work found.
+- **RNN ≈ GRU.** With a single shot the gates have nothing to do, and with longer windows the plain RNN is within
+  1–8 points. It is 2–4× faster to train.
+- **Seg 7 is lost only on its last 5 shots,** the jump to 18 nC (+55 % jitter). The networks saturate there (+15 %),
+  because their inputs are clipped at 5 training std and the units are tanh. The ridge extrapolates (+42 %). Before
+  the jump the networks match the ridge (`jitter_sequence.png`). An RNN on the ridge's residual, or a wider clip,
+  would keep both.
+- **Low charge stays hard:** 28–49 % on segs 3 and 4. Part of that 13–14 % jitter is probably the BCM's own noise.
+
+**Ridge + GRU, and past BCM.** Two more variants:
+- **Ridge + GRU:** the GRU learns the ridge's residual, so the ridge keeps extrapolating where the GRU saturates.
+- **Past BCM:** each window step also carries the previous good shot's BCM jitter, never the current one's. The
+  ridge gets the last 16.
+
+| MAE (pC), test regions | seg 0 | seg 3 | seg 4 | seg 5 | seg 1 | seg 6 | seg 7 |
+|---|---|---|---|---|---|---|---|
+| trailing level only | 18.2 | 12.4 | 11.7 | 145.5 | 143.3 | 122.2 | 428.1 |
+| ridge, current shot | 10.0 | 9.4 | 8.9 | 69.5 | 84.6 | 57.0 | 174.4 |
+| ridge, + past BCM | 10.0 | 9.4 | 8.9 | 69.7 | 84.4 | 56.7 | 177.0 |
+| GRU, L = 16 | 9.1 | 9.2 | 8.1 | 42.1 | 47.2 | 31.2 | 226.3 |
+| GRU, L = 16, past BCM | 9.3 | 9.2 | 8.1 | 41.1 | 46.1 | **30.5** | 223.8 |
+| ridge + GRU, L = 1 | **9.0** | 9.2 | **7.9** | 41.6 | 46.6 | 35.7 | 158.2 |
+| ridge + GRU, L = 16 | 9.1 | 9.2 | 8.1 | 42.7 | 46.9 | 32.8 | 150.2 |
+| **ridge, + past BCM + GRU, L = 64, past BCM** | 9.2 | **9.1** | 8.1 | **40.8** | **45.7** | 31.0 | **147.0** |
+
+- **Ridge + GRU fixes seg 7:** 147–158 pC against 226 for the GRU alone and 174 for the ridge (91–92 % of the jitter
+  explained, against 44 % and 89 %). Elsewhere it matches the GRU alone.
+- **Past BCM adds almost nothing:** at most 1.4 pC (3 %) on segs 1 and 5, and no change for the ridge. Against the
+  trailing level, the BCM jitter has no shot-to-shot memory that the instruments do not already carry. These
+  differences are not tested against seed noise.
+- **Best overall:** the last row, within 0.5 pC of the best on every segment. It leaves the gaps to the BCM noise
+  floor (next section) almost unchanged: residual rms 1.06 % against ~0.7 % on seg 5, 1.52 % against ~1.2 % on seg 1,
+  and 11.3 % against ~9.3 % on seg 3.
+
+## How low can the jitter error go? The BCM's own noise (`bcm_noise_floor.py`, `results/noise_floor/`)
+
+```bash
+python3 -I scripts/bcm_noise_floor.py data/tables 2026-10-09_07-46-07 2026-10-08_21-11-47 2026-10-08_00-08-19 \
+    2026-10-07_21-43-26 2026-10-08_15-42-27
+```
+
+No model can predict the BCM's own measurement noise, so that noise is the floor for the residual of any jitter model.
+It is estimated with a three-cornered hat:
+- **Readings:** the BCM, the camera intensity and a third reading of the same shot. Each jitter (as in
+  `jitter_sequence.py`) = gain × the true charge jitter + its own noise.
+- **Formula:** with independent noises, noise variance of a = var(a) − cov(a, b) cov(a, c) / cov(b, c). The gains
+  drop out.
+- **The third reading** need only correlate with the charge. The beam-loading step, clex and lab are each tried, and
+  their agreement is the check.
+  - The step is useless at low charge (r ≈ 0.02 with the others).
+  - clex and lab agree to within 0.6 points at low charge, and to within 0.35 points at high charge.
+- **Spikes:** any reading beyond 5 MAD within its segment (0.36 % of shots) is removed.
+- **Intervals:** 95 % block bootstrap.
+
+| rms in % of the level | seg 0 (low) | seg 3 (low) | seg 4 (low) | seg 5 (rep.) | seg 1 (non-rep.) | seg 6 (non-rep.) |
+|---|---|---|---|---|---|---|
+| BCM jitter (target rms, test region) | 9.5 | 13.5 | 14.1 | 3.2 | 3.9 | 2.8 |
+| **BCM noise, test region** (clex / lab as third) | 4.8 / 4.8 | 9.6 / 9.0 | 11.5 / 10.6 (whole seg.) | 0.77 / 0.68 | 1.26 / 1.19 | 0.95 / 0.61 |
+| residual, ridge (`jitter_sequence.py`) | 5.4 | 11.4 | 11.1 | 1.6 | 2.4 | 1.3 |
+| residual, GRU L = 16 | **4.9** | 11.4 | **10.2** | 1.1 | 1.6 | **0.70** |
+
+The residual rms = target rms × √(1 − jitter explained). Seg 4's test region has too few shots with all three readings,
+so its whole-segment value is shown. Seg 7 (1.2–1.4 % over the whole segment) is dominated by its final jump.
+
+- **At low charge about half of the BCM jitter is the BCM's own noise:** 40 % on seg 0, 50–53 % on segs 3 and 4, by
+  variance.
+- **At high charge it is small:** 0.5–1.1 %, i.e. 2–11 % of the jitter variance. The three third readings
+  disagree by up to 2× there (step 0.35–0.6 %, clex 0.84–1.06 %), so the one-factor model is only approximate.
+- **The GRU is at the floor on segs 0, 4 and 6.** Nothing on those segments can get much lower.
+- **Room is left on segs 5, 1 and 3:**
+  - seg 5: residual 1.1 % vs a floor of ~0.7 %;
+  - seg 1: 1.6 % vs ~1.2 %;
+  - seg 3: 11.4 % vs ~9.3 %.
+
+  Removing all the model error would cut the residual rms by about a third on seg 5, a quarter on seg 1 and a fifth
+  on seg 3: roughly 42 → 28 pC, 47 → 36 pC and 9.3 → 7.6 pC MAE, if the MAE scales with the rms.
+- **What "noise" means here:** the part of the BCM jitter that the camera does not share. Real charge the BCM sees but
+  the screen does not, such as losses between the gun and the screen, counts as noise. So this is the floor for
+  models built on these instruments.
+
+## More inputs for the jitter? Laser shape and RF (`jitter_input_screen.py`, `results/jitter_input_screen/`)
+
+```bash
+python3 -I scripts/jitter_input_screen.py data/tables 2026-10-09_07-46-07 2026-10-08_21-11-47 2026-10-08_00-08-19 \
+    2026-10-07_21-43-26 2026-10-08_15-42-27
+```
+
+**Laser features of `extract_features.py`:** there is nothing new to add.
+- Its laser outputs are `lab_laser_power` (our lab) and `laser_amp`.
+- `laser_amp` is the same matched filter on the laser scope as our `scope` input: same baseline and window. It differs
+  in three ways:
+  - its template is per segment rather than per run, a constant factor that the fast part removes;
+  - saturated and not-acquired pulses are not masked;
+  - it uses the team's row + 1 alignment.
+
+The screen tests two groups of readings that are not used yet. Each is added to the current-shot ridge of
+`jitter_sequence.py`, with the same target, fast parts, split and regimes:
+- **laser shape:** the scope pulse beyond its amplitude: 5 principal components of pulse / amplitude, centroid and
+  width;
+- **RF:** flat-top means before the beam, and their slopes: gun incident amplitude and phase, gun reflected, klystron
+  phase and reflected.
+
+| Jitter explained %, test regions | seg 0 | seg 3 | seg 4 | seg 5 | seg 1 | seg 6 | seg 7 |
+|---|---|---|---|---|---|---|---|
+| ridge | 68.1 | 28.3 | 38.5 | 74.1 | 63.3 | 79.0 | 89.0 |
+| ridge + laser shape | 68.1 | 28.2 | 38.5 | 74.1 | 63.5 | 79.0 | 88.8 |
+| ridge + RF | 68.2 | 28.4 | 38.3 | 74.1 | 63.3 | 79.1 | 89.0 |
+
+- **Neither group helps.** No feature correlates with the ridge's residual by more than |r| = 0.055, and the jitter
+  explained moves by less than 1.2 points.
+- **Laser:** lab, clex and the scope amplitude carry all the laser information that matters here. The pulse shape on
+  the scope probably shows the photodiode's response more than the laser's.
+- **RF:** the gun and klystron flat tops do not vary from shot to shot in a way the charge feels.
+- **What is left:** the remaining gaps to the BCM noise floor on segs 5, 1 and 3 must come from the camera, from
+  nonlinear structure (the GRU already takes some), or from a floor that is higher than estimated. The high-charge
+  floor is uncertain by ~2×.
+
