@@ -7,6 +7,8 @@
 # Not the beam-loading step: its noise is ~fixed in nC, so relative to a 0.3 nC level it is 8x noisier than at 5 nC
 # and a model trained on high-charge runs over-trusts it (run 3, other runs only: 0.0511 nC with it, 0.0472 without).
 # Log ratios, because photoemission scales with the laser: a laser-driven level change is a large ratio, not an outlier.
+# One ridge per charge regime (hybrid level above / below LEVEL_SPLIT, known before the shot): the laser->charge relation
+# differs at 0.1-0.3 nC, and one pooled model over 5 runs made runs 1-2 worse (0.302 / 0.125 vs 0.295 / 0.119 nC split).
 # Missing readings stay missing (feature 0): ~10 % of meter and 13-36 % of step readings have no pulse of their own.
 # Trained on all good shots of the first 90 % (pooled runs, and the other runs only), scored on the last 10 % with
 # score_forecast against the BCM, like the forecasts.
@@ -21,6 +23,7 @@ from combined_forecast import ALPHAS, WMAX, Z, prepare, score, seg_mean
 from nbfuncs import TARGET, cut_shot, scored_shots
 from pulses import align, pulse_ids, stamp_shift
 
+LEVEL_SPLIT = 1.0        # nC
 SAME_SHOT = {'lab only': ['lab'], 'lab, clex, scope': ['lab', 'clex', 'scope']}
 
 
@@ -82,11 +85,18 @@ def main():
         for name, src in srcs.items():
             use = src(run)
             for sname, names in SAME_SHOT.items():
-                X = pd.concat([design(R[u], names)[R[u]['vfit']] for u in use])
-                m = RidgeCV(alphas=ALPHAS).fit(X, np.concatenate([R[u]['ly'][R[u]['vfit']] for u in use]))
-                if name == 'pooled runs':
-                    coefs[sname] = pd.Series(m.coef_ * X.std().values * 100, X.columns)
-                cands[f'virtual BCM, {sname}, {name}'] = r['p'].values * np.exp(m.predict(design(r, names)))
+                lp, D = np.zeros(len(r['p'])), design(r, names)
+                for hi in (False, True):
+                    sel = {u: R[u]['vfit'] & ((R[u]['p'] > LEVEL_SPLIT) == hi) for u in use}
+                    at = (r['p'] > LEVEL_SPLIT).values == hi
+                    if not sum(s.sum() for s in sel.values()) or not at.any():
+                        continue                           # no training shots in this regime: stay the hybrid
+                    X = pd.concat([design(R[u], names)[sel[u]] for u in use])
+                    m = RidgeCV(alphas=ALPHAS).fit(X, np.concatenate([R[u]['ly'][sel[u]] for u in use]))
+                    if name == 'pooled runs':
+                        coefs[f'{sname}, {"above" if hi else "below"} {LEVEL_SPLIT:g} nC'] = pd.Series(m.coef_ * X.std().values * 100, X.columns)
+                    lp[at] = m.predict(D[at])
+                cands[f'virtual BCM, {sname}, {name}'] = r['p'].values * np.exp(lp)
         # BCM lost at the cut: no BCM in the test region, everything frozen at the last 200 good training shots
         cut = cut_shot(r['df'])
         cal = r['q'].notna() & (r['df'].index < cut) & (r['df'].index >= cut - 400)

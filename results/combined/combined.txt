@@ -3,18 +3,28 @@ next-shot MAE (nC) on each run's test region (last 10 %); stable / after change 
 2026-10-09_07-46-07             9-shot mean (baseline)    0.5053  0.2866        1.8845       838        89  0.0000
 2026-10-09_07-46-07              hybrid (z=6, wmax=20)    0.3500  0.2819        0.8262       838        89 30.7248
 2026-10-09_07-46-07         combined, ridge on own run    0.3464  0.2784        0.8326       838        89 31.4453
-2026-10-09_07-46-07     combined, ridge on pooled runs    0.3472  0.2790        0.8343       838        89 31.2910
-2026-10-09_07-46-07 combined, ridge on other runs only    0.3474  0.2792        0.8353       838        89 31.2557
+2026-10-09_07-46-07     combined, ridge on pooled runs    0.3483  0.2797        0.8346       838        89 31.0608
+2026-10-09_07-46-07 combined, ridge on other runs only    0.3485  0.2799        0.8352       838        89 31.0276
 2026-10-08_21-11-47             9-shot mean (baseline)    0.1442  0.1442           NaN      2000         0  0.0000
 2026-10-08_21-11-47              hybrid (z=6, wmax=20)    0.1414  0.1414           NaN      2000         0  1.9255
 2026-10-08_21-11-47         combined, ridge on own run    0.1396  0.1396           NaN      2000         0  3.1343
-2026-10-08_21-11-47     combined, ridge on pooled runs    0.1397  0.1397           NaN      2000         0  3.0676
-2026-10-08_21-11-47 combined, ridge on other runs only    0.1398  0.1398           NaN      2000         0  3.0536
+2026-10-08_21-11-47     combined, ridge on pooled runs    0.1398  0.1398           NaN      2000         0  3.0427
+2026-10-08_21-11-47 combined, ridge on other runs only    0.1399  0.1399           NaN      2000         0  2.9585
 2026-10-08_00-08-19             9-shot mean (baseline)    0.0702  0.0258        0.2962      1217       328  0.0000
 2026-10-08_00-08-19              hybrid (z=6, wmax=20)    0.0494  0.0255        0.1515      1217       328 29.6879
 2026-10-08_00-08-19         combined, ridge on own run    0.0491  0.0251        0.1508      1217       328 30.0169
-2026-10-08_00-08-19     combined, ridge on pooled runs    0.0491  0.0250        0.1507      1217       328 30.0528
-2026-10-08_00-08-19 combined, ridge on other runs only    0.0491  0.0251        0.1508      1217       328 30.0341
+2026-10-08_00-08-19     combined, ridge on pooled runs    0.0494  0.0253        0.1505      1217       328 29.6204
+2026-10-08_00-08-19 combined, ridge on other runs only    0.0495  0.0254        0.1504      1217       328 29.4499
+2026-10-07_21-43-26             9-shot mean (baseline)    0.0198  0.0198           NaN       713         0  0.0000
+2026-10-07_21-43-26              hybrid (z=6, wmax=20)    0.0193  0.0193           NaN       713         0  2.5961
+2026-10-07_21-43-26         combined, ridge on own run    0.0186  0.0186           NaN       713         0  5.8771
+2026-10-07_21-43-26     combined, ridge on pooled runs    0.0185  0.0185           NaN       713         0  6.4050
+2026-10-07_21-43-26 combined, ridge on other runs only    0.0185  0.0185           NaN       713         0  6.4621
+2026-10-08_15-42-27             9-shot mean (baseline)    0.0122  0.0123           NaN       480         0  0.0000
+2026-10-08_15-42-27              hybrid (z=6, wmax=20)    0.0119  0.0118           NaN       480         0  2.4617
+2026-10-08_15-42-27         combined, ridge on own run    0.0119  0.0117           NaN       480         0  2.7570
+2026-10-08_15-42-27     combined, ridge on pooled runs    0.0118  0.0117           NaN       480         0  3.2902
+2026-10-08_15-42-27 combined, ridge on other runs only    0.0118  0.0117           NaN       480         0  3.2099
 
 pooled ridge (alpha 0.0853): relative correction per std of each feature, in % of the level
-  q1 +0.198  q3 +0.209  q50 +0.370  q200 +0.576  lab1 +0.374  lab9 +0.039  clex1 +0.024  clex9 +0.398  step1 -0.010  step9 +0.048
+  q1 -0.027  q3 +0.193  q50 +0.758  q200 +0.828  lab1 +0.173  lab9 +0.254  clex1 +0.590  clex9 +0.247  step1 +0.021  step9 +0.029
