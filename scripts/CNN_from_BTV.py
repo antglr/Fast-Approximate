@@ -15,7 +15,7 @@ import torch.nn.functional as F
 from torch.utils.data import Dataset, DataLoader
 from helpers import *
 
-H, W = 1216, 1936  # height, width (array shape is (N, H, W) = (100, 1216, 1936))
+H, W = 300, 400  # height, width (array shape is (N, H, W) = (100, 1216, 1936))
 LATENT = 16
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -24,10 +24,25 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 class ImageSeries(Dataset):
     """Wraps a numpy array of shape (N, H, W) = (100, 1216, 1936).
     Axis 0 must be the temporal order. Intensities are scaled to [0, 1].
+    crop  : "center" -> H x W = 400 x 500 window centered on the middle of the image (default use),
+            (y0, x0) -> window whose top-left corner is (y0, x0),
+            None     -> the array is already (N, 400, 500).
+            The spot must stay inside the window in ALL frames, and the same crop must be
+            used for train and test sets.
     labels: optional (N, 3) array of (x, y, size), normalized to [0, 1]."""
 
-    def __init__(self, array, labels=None):
+    def __init__(self, array, crop="center", labels=None):
         arr = np.asarray(array)
+        if crop is not None:
+            if isinstance(crop, str):
+                assert crop == "center", f"unknown crop {crop!r} (use 'center', (y0, x0) or None)"
+                y0, x0 = (arr.shape[1] - H) // 2, (arr.shape[2] - W) // 2
+            else:
+                y0, x0 = crop
+            assert y0 >= 0 and x0 >= 0 and y0 + H <= arr.shape[1] and x0 + W <= arr.shape[2], \
+                f"crop window ({y0}:{y0 + H}, {x0}:{x0 + W}) outside the image {arr.shape[1:]}"
+            print(f"crop: rows {y0}:{y0 + H}, cols {x0}:{x0 + W} of the {arr.shape[1]} x {arr.shape[2]} image")
+            arr = arr[:, y0:y0 + H, x0:x0 + W]
         assert arr.ndim == 3 and arr.shape[1:] == (H, W), f"shape {arr.shape}, expected (N, {H}, {W})"
         arr = arr.astype(np.float32)
         mx = arr.max()
@@ -79,8 +94,8 @@ class Encoder(nn.Module):
             down(64, 64),   # 38 x 61
         )
         # No global average pooling (it loses position). Grid (height, width) = (4, 6).
-        self.pool = nn.AdaptiveAvgPool2d((4, 6))
-        self.fc = nn.Sequential(nn.Flatten(), nn.Linear(64 * 4 * 6, 128), nn.ReLU(True), nn.Linear(128, latent))
+        self.pool = nn.AdaptiveAvgPool2d((3, 4))
+        self.fc = nn.Sequential(nn.Flatten(), nn.Linear(64 * 3 * 5, 128), nn.ReLU(True), nn.Linear(128, latent))
 
     def forward(self, x):
         return self.fc(self.pool(self.conv(self.coords(x))))
@@ -89,12 +104,12 @@ class Encoder(nn.Module):
 class Decoder(nn.Module):
     def __init__(self, latent=LATENT):
         super().__init__()
-        self.fc = nn.Sequential(nn.Linear(latent, 128), nn.ReLU(True), nn.Linear(128, 64 * 4 * 6))
+        self.fc = nn.Sequential(nn.Linear(latent, 128), nn.ReLU(True), nn.Linear(128, 64 * 3 * 4))
         self.net = nn.Sequential(up(64, 64), up(64, 32), up(32, 16), up(16, 8), up(8, 4), nn.Conv2d(4, 1, 3, padding=1))
 
     def forward(self, z):
-        x = self.fc(z).view(-1, 64, 4, 6)
-        x = F.interpolate(x, size=(38, 61), mode="bilinear", align_corners=False)
+        x = self.fc(z).view(-1, 64, 3, 4)
+        x = F.interpolate(x, size=(10, 13), mode="bilinear", align_corners=False)
         x = self.net(x)  # 1216 x 1952
         x = F.interpolate(x, size=(H, W), mode="bilinear", align_corners=False)
         return torch.sigmoid(x)
@@ -126,7 +141,7 @@ def fmt_time(s):
     return f"{h:d}:{m:02d}:{s:02d}"
 
 
-def train(ds, epochs=50, batch=15, lr=5e-3, aux_weight=1.0):
+def train(ds, epochs=20, batch=30, lr=2e-3, aux_weight=1.0):
     """Trains the autoencoder and prints one line per epoch.
     No translation/rotation augmentation: it would move the spot and corrupt the latent."""
     supervised = ds.labels is not None
@@ -214,7 +229,7 @@ def evaluate_reconstruction(model, ds, batch=4):
     return dict(mse=mses, pos_err=pos_err, size_err=size_err)
 
 
-def plot_reconstructions(model, ds, indices=(0, 25, 50, 99), path="reconstructions.png"):
+def plot_reconstructions(model, ds, indices=(0, -1), path="reconstructions.png"):
     """Saves a figure: original | reconstruction | absolute difference, for the chosen frames."""
     import matplotlib
     matplotlib.use("Agg")
@@ -310,12 +325,13 @@ def train_lstm(z, T=10, epochs=300):
 
 
 if __name__ == "__main__":
+    CROP = "center"
     folder = "../test_data/" 
-    data = combiner(folder)['BTV0125'][0]['image2D']
-    test_data = combiner(folder)['BTV0125'][1]['image2D']
-    ds = ImageSeries(data)
+    data = np.concatenate([combiner(folder)['BTV0125'][k]['image2D'] for k in range(3)], axis=0)
+    test_data = combiner(folder)['BTV0125'][3]['image2D']
+    ds = ImageSeries(data, crop=CROP)
     model = train(ds)
-    ds_test = ImageSeries(test_data)
+    ds_test = ImageSeries(test_data, crop=CROP)
 
     evaluate_reconstruction(model, ds_test)           # decoding metrics
     plot_reconstructions(model, ds_test)              # reconstructions.png
