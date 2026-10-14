@@ -1,0 +1,90 @@
+{
+  "acquisition_2026-10-06_21-57-43": {
+    "BTV0125/imagePositionSet2": 3.04,
+    "BTV0125/projDataSet1Original": 3.04,
+    "BTV0125/projDataSet1": 3.03,
+    "BTV0125/projDataSet2Original": 3.03,
+    "BTV0125/projDataSet2": 3.03,
+    "BTV0125/imagePositionSet1": 3.02
+  },
+  "acquisition_2026-10-07_20-55-58": {
+    "BTV0125/projDataSet2Original": 10.61,
+    "BTV0125/projDataSet2": 10.61,
+    "BTV0125/imagePositionSet2": 10.61,
+    "BTV0125/projDataSet1Original": 10.61,
+    "BTV0125/imagePositionSet1": 10.61,
+    "BTV0125/projDataSet1": 10.61
+  },
+  "acquisition_2026-10-07_21-42-34": {
+    "BTV0125/projDataSet2Original": 24.32,
+    "BTV0125/projDataSet2": 24.32,
+    "BTV0125/imagePositionSet2": 24.32,
+    "BTV0125/imagePositionSet1": 24.32,
+    "BTV0125/projDataSet1Original": 24.32,
+    "BTV0125/projDataSet1": 24.32
+  },
+  "acquisition_2026-10-07_21-43-26": {
+    "BTV0125/imagePositionSet2": 8.28,
+    "BTV0125/imagePositionSet1": 8.28,
+    "BTV0125/projDataSet2": 8.26,
+    "BTV0125/projDataSet1": 8.26,
+    "BTV0125/projDataSet2Original": 8.25,
+    "BTV0125/projDataSet1Original": 8.25,
+    "clex_laser_power": 0.11
+  },
+  "acquisition_2026-10-08_00-08-19": {
+    "BTV0125/imagePositionSet2": 7.13,
+    "BTV0125/imagePositionSet1": 7.12,
+    "BTV0125/projDataSet2": 7.11,
+    "BTV0125/projDataSet1": 7.11,
+    "BTV0125/projDataSet2Original": 7.11,
+    "BTV0125/projDataSet1Original": 7.11,
+    "clex_laser_power": 0.01
+  },
+  "acquisition_2026-10-08_15-42-27": {
+    "BTV0125/projDataSet2": 6.65,
+    "BTV0125/imagePositionSet2": 6.65,
+    "BTV0125/imagePositionSet1": 6.65,
+    "BTV0125/projDataSet2Original": 6.64,
+    "BTV0125/projDataSet1Original": 6.64,
+    "BTV0125/projDataSet1": 6.64,
+    "clex_laser_power": 0.05
+  },
+  "acquisition_2026-10-08_21-11-47": {
+    "BTV0125/imagePositionSet2": 2.3,
+    "BTV0125/imagePositionSet1": 2.3,
+    "BTV0125/projDataSet2": 2.29,
+    "BTV0125/projDataSet1": 2.29,
+    "BTV0125/projDataSet2Original": 2.29,
+    "BTV0125/projDataSet1Original": 2.29
+  },
+  "acquisition_2026-10-09_07-46-07": {
+    "BTV0125/projDataSet2Original": 1.61,
+    "BTV0125/projDataSet1": 1.61,
+    "BTV0125/projDataSet2": 1.6,
+    "BTV0125/projDataSet1Original": 1.6,
+    "BTV0125/imagePositionSet2": 1.57,
+    "BTV0125/imagePositionSet1": 1.56,
+    "lab_laser_power": 0.77,
+    "clex_laser_power": 0.76
+  },
+  "acquisition_2026-10-09_11-48-33": {
+    "lab_laser_power": 21.41,
+    "BTV0125/projDataSet1": 1.87,
+    "BTV0125/projDataSet2Original": 1.87,
+    "BTV0125/projDataSet2": 1.87,
+    "BTV0125/imagePositionSet2": 1.87,
+    "BTV0125/projDataSet1Original": 1.87,
+    "BTV0125/imagePositionSet1": 1.87,
+    "clex_laser_power": 0.32,
+    "PKI15A/hotSpotsTimes": 0.01,
+    "PKR15A": 0.01,
+    "PKI15A/hotSpotsSamples": 0.01,
+    "PKI15A/samples": 0.01,
+    "PKI15P": 0.01,
+    "PGLA/samples": 0.01,
+    "PGRA": 0.01,
+    "PGLA/hotSpotsTimes": 0.01,
+    "PGLA/hotSpotsSamples": 0.01
+  }
+}

@@ -24,3 +24,4 @@ figures/
 .DS_Store
 .vscode/
 .idea/
+results/data_labelling/.chunk_scan_cache.pkl
