@@ -27,6 +27,7 @@ PY=python3 scripts/run_pipeline.sh 2026-10-09_07-46-07 data/h5 data/tables resul
 | `combined_forecast.py` | The hybrid plus a ridge correction, trained across runs (below); run it after `run_pipeline.sh` |
 | `gru_forecast.py` | GRU sequence model: a stable-beam correction of the hybrid from the last 64 shots, trained across runs (below); needs PyTorch |
 | `gru_window_sweep.py` | Reruns the GRU for context windows of 8–256 shots |
+| `forecast_uncertainty.py` | Bootstrap intervals for the MAE gains, and 90 % prediction intervals for the combined forecaster (below) |
 | `screen_variables.py` | Tests whether the notebook variables (klystron, gun field, magnets, climate, laser scope) help the next-shot forecast |
 | `virtual_bcm.py` | Same-shot virtual BCM: shot n's charge from shot n's own laser readings plus the BCM history (below) |
 
@@ -355,6 +356,66 @@ Seed-to-seed spread of the test MAE: ≤ 0.0019 nC. Every fit beats the hybrid o
 
 - On stable beam the remaining error is white, laser-driven jitter.
 - After a change, nearly all of the error is in the first shot or two. Changes come without warning in the data.
+
+## Are the gains real? Prediction intervals (`forecast_uncertainty.py`, `results/uncertainty/`)
+
+```
+python3 -I scripts/forecast_uncertainty.py data/tables results/gru/gru_forecasts.npz results/uncertainty \
+    2026-10-09_07-46-07 2026-10-08_21-11-47 2026-10-08_00-08-19 2026-10-07_21-43-26 2026-10-08_15-42-27
+```
+
+It reads the next-shot forecasts that `gru_forecast.py` saves (`results/gru/gru_forecasts.npz`), so nothing is
+retrained. It runs in ~20 s.
+
+### Bootstrap intervals for the gains
+
+A moving-block bootstrap of the test shots (50-shot blocks, 4000 resamples) gives a 95 % interval for each MAE
+reduction. The blocks keep the error autocorrelation: a level change gives a run of large errors. Where the 9-shot mean
+has no good shot in its window (4 shots after a beam trip on run 3), it holds its last value, so that every forecaster
+is scored on the same shots. This puts run 3's baseline at 0.0710 instead of 0.0702.
+
+| % MAE reduction [95 % interval] | run 1 (09_07) | run 2 (08_21) | run 3 (08_00) | run 4 (07_21) | run 5 (08_15) |
+|---|---|---|---|---|---|
+| hybrid vs 9-shot mean | +30.7 [+1.4, +38.0] | +1.9 [+0.3, +3.4] | +30.5 [+14.0, +41.1] | +2.6 [−0.6, +4.3] | +2.5 [+0.9, +3.7] |
+| combined vs 9-shot mean | +31.1 [+2.2, +38.3] | +3.0 [+1.5, +4.7] | +30.4 [+13.5, +40.8] | +6.4 [+3.7, +8.2] | +3.3 [+1.7, +4.6] |
+| GRU pooled vs 9-shot mean | +31.3 [+2.4, +38.5] | +2.9 [+1.3, +4.7] | +30.6 [+13.1, +40.8] | +5.1 [+2.1, +6.7] | +3.1 [+1.5, +4.5] |
+| combined vs hybrid | +0.5 [−1.1, +2.4] | +1.1 [+0.1, +2.5] | −0.1 [−2.1, +1.6] | +3.9 [+2.7, +5.2] | +0.9 [−0.5, +2.1] |
+| GRU pooled vs hybrid | +0.8 [−0.5, +2.6] | +1.0 [−0.2, +2.5] | +0.2 [−0.8, +1.0] | +2.6 [+1.4, +3.9] | +0.6 [−0.6, +1.8] |
+| GRU other runs only vs hybrid | +1.1 [−0.1, +2.6] | +1.1 [+0.1, +2.4] | +0.1 [−0.8, +1.0] | +2.0 [+0.9, +3.1] | +1.3 [+0.3, +2.2] |
+
+- **The combined forecaster and the GRU beat the 9-shot mean significantly on all five runs.** This is the Hard-tier
+  claim.
+- **On run 1 the lower bound is only ~+2 %.** Nearly all of the gain comes from the two level changes in the test
+  region; a resample that leaves them out shows almost none.
+- **The stable-beam correction on top of the hybrid is small: 0–4 %.** It is significant on run 4 for every model,
+  and on run 2 for some of them. On runs 1, 3 and 5 it cannot be told apart from 0. The combined forecaster and the GRU
+  cannot be told apart anywhere.
+- **With 200-shot blocks the conclusions are the same.** The hybrid on run 2 is then no longer significant
+  (+1.9 [−0.2, +3.2]), and the hybrid on run 4 becomes just significant.
+
+### 90 % prediction intervals
+
+The interval is forecast × (1 + [5 %, 95 %] quantiles of the relative residual), so it scales with the charge. Two
+calibrations, both causal:
+- **rolling:** the last 500 good residuals of the run, each used only once its shot has been measured. It follows the
+  jitter when the regime changes.
+- **fixed:** the quantiles of the run's own training part.
+
+Forecasts made fewer than 5 shots into a new segment use wider quantiles, −17 % / +32 %. These come from 527 such
+forecasts, pooled over the training parts of all runs.
+
+| combined forecaster, test region | run 1 | run 2 | run 3 | run 4 | run 5 |
+|---|---|---|---|---|---|
+| coverage, rolling (nominal 90 %) | 88.7 % | 89.7 % | 87.1 % | 87.7 % | 91.9 % |
+| mean width, rolling (% of level) | 13.3 | 10.1 | 22.5 | 29.1 | 54.2 |
+| coverage, fixed | 93.3 % | 91.0 % | 73.6 % | 85.7 % | 84.6 % |
+| coverage within 20 shots of a change, rolling | 78.7 % | – | 80.8 % | – | – |
+
+- **The rolling calibration holds 87–92 % on all runs.** The fixed one fails where the regime moves away from the
+  training part: run 3 (5 nC → 0.3 nC) and run 5.
+- **The width follows the relative jitter:** ±5–7 % at 5–19 nC, ±11 % at 0.3 nC, ±15 % and ±27 % at 0.1–0.2 nC.
+- **The first shot of each level change falls outside any interval of sensible width,** so coverage after changes is
+  ~80 %. The changes come without warning.
 
 ## Same-shot virtual BCM (`virtual_bcm.py`, `results/virtual_bcm/`)
 
