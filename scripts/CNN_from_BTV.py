@@ -95,7 +95,7 @@ class Encoder(nn.Module):
         )
         # No global average pooling (it loses position). Grid (height, width) = (4, 6).
         self.pool = nn.AdaptiveAvgPool2d((3, 4))
-        self.fc = nn.Sequential(nn.Flatten(), nn.Linear(64 * 3 * 5, 128), nn.ReLU(True), nn.Linear(128, latent))
+        self.fc = nn.Sequential(nn.Flatten(), nn.Linear(64 * 3 * 4, 128), nn.ReLU(True), nn.Linear(128, latent))
 
     def forward(self, x):
         return self.fc(self.pool(self.conv(self.coords(x))))
@@ -141,7 +141,7 @@ def fmt_time(s):
     return f"{h:d}:{m:02d}:{s:02d}"
 
 
-def train(ds, epochs=20, batch=30, lr=2e-3, aux_weight=1.0):
+def train(ds, epochs=100, batch=10, lr=2e-3, aux_weight=1.0):
     """Trains the autoencoder and prints one line per epoch.
     No translation/rotation augmentation: it would move the spot and corrupt the latent."""
     supervised = ds.labels is not None
@@ -201,6 +201,18 @@ def spot_stats(img):
     cy = (img * ys).sum() / tot
     var = (img * ((xs - cx) ** 2 + (ys - cy) ** 2)).sum() / tot / 2
     return cx.item(), cy.item(), var.sqrt().item()
+
+def beam_size(img, smooth=5):
+    """img: (H, W) tensor. Robust beam size: equivalent Gaussian sigma (pixels) from the area
+    above half-maximum, after removing the background and lightly smoothing (kills hot pixels).
+    For a Gaussian, area(>half max) = 2*pi*ln(2)*sigma^2."""
+    img = img - img.median()
+    sm = F.avg_pool2d(img[None, None], smooth, stride=1, padding=smooth // 2)[0, 0]
+    peak = sm.max()
+    if peak <= 0:
+        return float("nan")
+    area = (sm > 0.5 * peak).sum().item()
+    return (area / (2 * np.pi * np.log(2))) ** 0.5
 
 
 @torch.no_grad()
@@ -276,6 +288,18 @@ def plot_interpolation(model, ds, i=0, j=50, steps=6, path="interpolation.png"):
     #print("saved", path)
 
 
+@torch.no_grad()
+def diagnose(model, ds, i=0):
+    img = ds[i][0]
+    rec, _ = reconstruct(model, img[None])
+    img, rec = img[0], rec[0, 0]
+    print(f"original : max {img.max():.3f} | mean {img.mean():.5f} | sum {img.sum():.1f}")
+    print(f"recon    : max {rec.max():.3f} | mean {rec.mean():.5f} | sum {rec.sum():.1f}")
+    print(f"MSE model {F.mse_loss(rec, img):.6f} | MSE all-zero baseline {F.mse_loss(torch.zeros_like(img), img):.6f}")
+    print(f"size spot_stats : orig {spot_stats(img)[2]:.1f} px | recon {spot_stats(rec)[2]:.1f} px")
+    print(f"size beam_size  : orig {beam_size(img):.1f} px | recon {beam_size(rec):.1f} px")
+
+
 # ------------------------------------------------------------------ Latent extraction
 @torch.no_grad()
 def extract_latents(model, ds, batch=4):
@@ -286,6 +310,9 @@ def extract_latents(model, ds, batch=4):
     z = torch.cat(out)  # (N, LATENT)
     torch.save(z, "latents.pt")
     return z
+
+
+
 
 
 # ------------------------------------------------------------------ LSTM on the latent sequence
@@ -328,13 +355,15 @@ if __name__ == "__main__":
     CROP = "center"
     folder = "../test_data/" 
     data = np.concatenate([combiner(folder)['BTV0125'][k]['image2D'] for k in range(3)], axis=0)
-    test_data = combiner(folder)['BTV0125'][3]['image2D']
+    test_data = combiner(folder)['BTV0125'][3]['image2D'][:1,:,:]
     ds = ImageSeries(data, crop=CROP)
     model = train(ds)
     ds_test = ImageSeries(test_data, crop=CROP)
 
-    evaluate_reconstruction(model, ds_test)           # decoding metrics
-    plot_reconstructions(model, ds_test)              # reconstructions.png
-    plot_interpolation(model, ds_test, i=0, j=50)     # interpolation.png
+    diagnose(model, ds_test)
+
+#    evaluate_reconstruction(model, ds_test)           # decoding metrics
+#    plot_reconstructions(model, ds_test)              # reconstructions.png
+#    plot_interpolation(model, ds_test, i=0, j=50)     # interpolation.png
     # z = extract_latents(model, ds)               # (100, 16)
     # lstm, stats = train_lstm(z)
