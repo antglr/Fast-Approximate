@@ -1,4 +1,5 @@
-# Screen the notebook variables (klystron, gun field, magnets, temperatures, humidities, laser scope) for the next shot:
+# Screen the notebook variables (klystron, gun field, magnets, temperatures, humidities, laser scope, and the team's
+# camera features if <run>_camera.npz exists) for the next shot:
 # (1) same-shot r with the charge jitter (alignment check, replicates the notebooks),
 # (2) r of their causal deviations (1/9/50-shot segment mean minus the 200-shot one) with the hybrid's next-shot
 #     relative error on stable shots,
@@ -37,6 +38,9 @@ for run in RUNS:
     for k in ('DHG0130', 'SNH_110', 'SNI_120', 'TEMP1', 'TEMP2', 'TEMP3', 'TEMP4', 'HUMID1', 'HUMID2', 'HUMID3', 'HUMID4'):
         V[k] = df[k].values.astype(float)
     V['lab'], V['clex'], V['step'] = r['x'].lab.values, r['x'].clex.values, r['x'].step.values
+    if os.path.exists(p + '_camera.npz'):                 # the team's camera features on the pulse grid (camera_features.py)
+        C = np.load(p + '_camera.npz')
+        V.update({k: C[k] for k in C.files if k != 'shot'})
     pos = np.searchsorted(d['shot'], df.index)          # the npz arrays cover the whole run, df only the clean span
     V = {k: v if len(v) == len(df) else v[pos] for k, v in V.items()}
     r['V'] = pd.DataFrame(V, df.index).replace([np.inf, -np.inf], np.nan)
@@ -54,7 +58,7 @@ for run, r in R.items():
         vj = det(v)
         m = st & vj.notna() & qj.notna()
         # next-shot: causal deviation of the variable vs the hybrid's next-shot relative error, on fit rows
-        dev = {kk: seg_mean(v.interpolate(limit_direction='both'), r['seg'], kk) - seg_mean(v.interpolate(limit_direction='both'), r['seg'], 200) for kk in (1, 9, 50)}
+        dev = {kk: seg_mean(v.ffill(), r['seg'], kk) - seg_mean(v.ffill(), r['seg'], 200) for kk in (1, 9, 50)}
         f = r['fit'] | (st.shift(-1, fill_value=False).values & r['on'] & ~r['train'])
         y = pd.Series(r['y'], v.index)
         rows.append({'run': run[:13], 'var': k, 'same-shot r': np.corrcoef(vj[m], qj[m])[0, 1] if m.sum() > 50 else np.nan,
@@ -66,11 +70,14 @@ print(pd.DataFrame(rows).pivot_table(index='var', columns='run', values=['same-s
 GROUPS = {'base': [], 'klystron': ['PKI15A', 'PKI15P', 'PKR15A'], 'gun field': ['gun field'], 'scope': ['scope amp (stamp+0)'],
           'magnets': ['DHG0130', 'SNH_110', 'SNI_120'], 'temp': ['TEMP1', 'TEMP2', 'TEMP3', 'TEMP4'],
           'humid': ['HUMID1', 'HUMID2', 'HUMID3', 'HUMID4']}
-GROUPS['all'] = sum(GROUPS.values(), [])
+if 'BTV_intensity' in R[RUNS[0]]['V']:
+    GROUPS['camera intensity'] = ['BTV_intensity']
+    GROUPS['camera'] = [k for k in R[RUNS[0]]['V'] if k.startswith(('BTV_', 'SVD_'))]
+GROUPS['all'] = sorted(set(sum(GROUPS.values(), [])))
 def feats(r, names):
     F = r['F'].copy()
     for k in names:
-        v = r['V'][k].interpolate(limit_direction='both')
+        v = r['V'][k].ffill()        # causal fill: interpolating fills shot n from n+1
         sd = v[r['train']].diff().std() or 1
         for kk in (1, 9, 50):
             F[f'{k}{kk}'] = ((seg_mean(v, r['seg'], kk) - seg_mean(v, r['seg'], 200)) / sd).clip(-10, 10)

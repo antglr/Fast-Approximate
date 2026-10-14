@@ -3,7 +3,8 @@
 # needs shot n's instruments, so it is a virtual diagnostic (e.g. while the BCM is stuck or reads wrong).
 # Model: log(Q[n] / hybrid level after n-1) = ridge on
 #   history   the combined forecaster's features (as in combined_forecast.py)
-#   same shot log(reading[n] / its segment mean over the last 20 and 200 shots up to n-1) for lab, clex, scope
+#   same shot log(reading[n] / its segment mean over the last 20 and 200 shots up to n-1) for lab, clex, scope, and the
+#             team's camera features (screen intensity, spot sizes, per-image SVD) if <run>_camera.npz exists
 # Not the beam-loading step: its noise is ~fixed in nC, so relative to a 0.3 nC level it is 8x noisier than at 5 nC
 # and a model trained on high-charge runs over-trusts it (run 3, other runs only: 0.0511 nC with it, 0.0472 without).
 # Log ratios, because photoemission scales with the laser: a laser-driven level change is a large ratio, not an outlier.
@@ -25,6 +26,10 @@ from pulses import align, pulse_ids, stamp_shift
 
 LEVEL_SPLIT = 1.0        # nC
 SAME_SHOT = {'lab only': ['lab'], 'lab, clex, scope': ['lab', 'clex', 'scope']}
+# the team's camera features (camera_features.py -> <run>_camera.npz), only the positive ones: they enter as log ratios
+CAMERA = ['BTV_intensity', 'BTV_amplitude', 'BTV_sigma_major', 'BTV_sigma_minor', *[f'SVD_s{k}' for k in range(1, 7)]]
+CAMERA_SETS = {'camera intensity only': ['BTV_intensity'], 'lab, clex, scope, camera intensity': ['lab', 'clex', 'scope', 'BTV_intensity'],
+               'lab, clex, scope, camera': ['lab', 'clex', 'scope', *CAMERA]}
 
 
 def scope_amp(tables, run):
@@ -64,6 +69,12 @@ def main():
         r['inst'] = pd.DataFrame({k: x[k].where(x[k + '_ok']) for k in ('lab', 'clex', 'step')}, r['df'].index)
         r['inst']['scope'] = scope_amp(tables, run)          # aligns on the shot index (load_run trims to the clean chunks)
         r['inst'].loc[r['inst'].scope <= 0, 'scope'] = np.nan
+        cam = os.path.join(tables, run + '_camera.npz')
+        if os.path.exists(cam):
+            C = np.load(cam)
+            for k in CAMERA:
+                r['inst'][k] = pd.Series(C[k], C['shot']).where(lambda v: v > 0)
+            SAME_SHOT.update(CAMERA_SETS)
         with np.errstate(invalid='ignore', divide='ignore'):
             r['ly'] = np.log(r['q'].shift(-1).values / r['p'].values)                 # target: log(Q[i+1] / level)
         r['vfit'] = r['train'] & (r['df'].index + 1 < cut_shot(r['df'])) & np.isfinite(r['ly'])
@@ -105,6 +116,8 @@ def main():
         step_off = (r['inst'].step - r['q'])[cal].mean()
         cands['BCM lost: laser x frozen ratio'] = (q0 * r['inst'].lab / lab0).shift(-1).values
         cands['BCM lost: step - frozen offset'] = (r['inst'].step - step_off).shift(-1).values
+        if 'BTV_intensity' in r['inst']:
+            cands['BCM lost: camera x frozen ratio'] = (q0 * r['inst'].BTV_intensity / r['inst'].BTV_intensity[cal].mean()).shift(-1).values
         for name, v in cands.items():
             e = np.abs(yq - pd.Series(v, r['df'].index).shift(1).reindex(shots).values)
             rows.append({'run': run, 'estimate': name, 'test MAE': score(r, v), 'stable': np.nanmean(e[st]),
@@ -121,7 +134,7 @@ def main():
 
     import matplotlib; matplotlib.use('Agg')
     import matplotlib.pyplot as plt
-    best = 'virtual BCM, lab, clex, scope, pooled runs'
+    best = f'virtual BCM, {list(SAME_SHOT)[-1]}, pooled runs'
     for run, r in R.items():
         shots = scored_shots(r['df'])
         yq = r['df'].loc[shots, TARGET].values

@@ -1,0 +1,85 @@
+2026-10-09_07-46-07: camera stamp - trigger, in pulses: {-0.0: 5637, 1.0: 463}
+  BTV_intensity r with the charge jitter, per extra shift: {-1: np.float64(0.294), 0: np.float64(0.904), 1: np.float64(0.303)} -> use 0
+  dark frames masked: 0.000%
+    BTV_intensity    r +0.904  (5636 shots)
+    BTV_amplitude    r +0.374  (5636 shots)
+    BTV_mean_x       r -0.108  (5636 shots)
+    BTV_sigma_major  r +0.232  (5636 shots)
+    BTV_sigma_minor  r +0.240  (5636 shots)
+    BTV_tilt         r +0.062  (5636 shots)
+    BTV_ellipticity  r -0.028  (5636 shots)
+    SVD_s1           r +0.741  (5636 shots)
+    SVD_s2           r +0.633  (5636 shots)
+    SVD_s3           r -0.072  (5636 shots)
+    SVD_s4           r +0.129  (5636 shots)
+    SVD_s5           r +0.469  (5636 shots)
+    SVD_s6           r +0.232  (5636 shots)
+  -> data/tables/2026-10-09_07-46-07_camera.npz
+2026-10-08_21-11-47: camera stamp - trigger, in pulses: {-0.0: 15857, 1.0: 4128, 2.0: 15}
+  BTV_intensity r with the charge jitter, per extra shift: {-1: np.float64(0.094), 0: np.float64(0.756), 1: np.float64(0.069)} -> use 0
+  dark frames masked: 0.020%
+    BTV_intensity    r +0.797  (15849 shots)
+    BTV_amplitude    r +0.383  (15849 shots)
+    BTV_mean_x       r -0.142  (15849 shots)
+    BTV_sigma_major  r +0.078  (15849 shots)
+    BTV_sigma_minor  r +0.108  (15849 shots)
+    BTV_tilt         r +0.063  (15849 shots)
+    BTV_ellipticity  r -0.054  (15849 shots)
+    SVD_s1           r +0.710  (15851 shots)
+    SVD_s2           r +0.509  (15851 shots)
+    SVD_s3           r +0.001  (15851 shots)
+    SVD_s4           r +0.127  (15851 shots)
+    SVD_s5           r +0.163  (15851 shots)
+    SVD_s6           r +0.257  (15851 shots)
+  -> data/tables/2026-10-08_21-11-47_camera.npz
+2026-10-08_00-08-19: camera stamp - trigger, in pulses: {-0.0: 15866, 1.0: 3518, 2.0: 16}
+  BTV_intensity r with the charge jitter, per extra shift: {-1: np.float64(0.07), 0: np.float64(0.455), 1: np.float64(0.043)} -> use 0
+  dark frames masked: 0.412%
+    BTV_intensity    r +0.726  (15689 shots)
+    BTV_amplitude    r +0.219  (15689 shots)
+    BTV_mean_x       r -0.114  (15689 shots)
+    BTV_sigma_major  r +0.061  (15689 shots)
+    BTV_sigma_minor  r +0.113  (15689 shots)
+    BTV_tilt         r +0.106  (15689 shots)
+    BTV_ellipticity  r -0.072  (15689 shots)
+    SVD_s1           r +0.315  (15777 shots)
+    SVD_s2           r +0.263  (15777 shots)
+    SVD_s3           r -0.062  (15777 shots)
+    SVD_s4           r +0.036  (15777 shots)
+    SVD_s5           r +0.187  (15777 shots)
+    SVD_s6           r +0.058  (15777 shots)
+  -> data/tables/2026-10-08_00-08-19_camera.npz
+2026-10-07_21-43-26: camera stamp - trigger, in pulses: {-0.0: 6007, 1.0: 20}
+  BTV_intensity r with the charge jitter, per extra shift: {-1: np.float64(0.044), 0: np.float64(0.348), 1: np.float64(0.034)} -> use 0
+  dark frames masked: 0.979%
+    BTV_intensity    r +0.395  (5882 shots)
+    BTV_amplitude    r +0.358  (5882 shots)
+    BTV_mean_x       r -0.060  (5882 shots)
+    BTV_sigma_major  r +0.013  (5882 shots)
+    BTV_sigma_minor  r +0.045  (5882 shots)
+    BTV_tilt         r +0.098  (5882 shots)
+    BTV_ellipticity  r +0.015  (5882 shots)
+    SVD_s1           r +0.555  (5955 shots)
+    SVD_s2           r +0.113  (5955 shots)
+    SVD_s3           r +0.096  (5955 shots)
+    SVD_s4           r +0.077  (5955 shots)
+    SVD_s5           r +0.140  (5955 shots)
+    SVD_s6           r +0.086  (5955 shots)
+  -> data/tables/2026-10-07_21-43-26_camera.npz
+2026-10-08_15-42-27: camera stamp - trigger, in pulses: {-0.0: 10607, 1.0: 1193}
+  BTV_intensity r with the charge jitter, per extra shift: {-1: np.float64(0.028), 0: np.float64(0.493), 1: np.float64(0.02)} -> use 0
+  dark frames masked: 0.512%
+    BTV_intensity    r +0.578  (10504 shots)
+    BTV_amplitude    r +0.473  (10504 shots)
+    BTV_mean_x       r +0.010  (10504 shots)
+    BTV_sigma_major  r +0.016  (10504 shots)
+    BTV_sigma_minor  r +0.029  (10504 shots)
+    BTV_tilt         r +0.130  (10504 shots)
+    BTV_ellipticity  r -0.015  (10504 shots)
+    SVD_s1           r +0.535  (10580 shots)
+    SVD_s2           r +0.270  (10580 shots)
+    SVD_s3           r +0.209  (10580 shots)
+    SVD_s4           r +0.242  (10580 shots)
+    SVD_s5           r +0.163  (10580 shots)
+    SVD_s6           r +0.192  (10580 shots)
+  -> data/tables/2026-10-08_15-42-27_camera.npz

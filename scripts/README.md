@@ -29,8 +29,9 @@ PY=python3 scripts/run_pipeline.sh 2026-10-09_07-46-07 data/h5 data/tables resul
 | `gru_forecast.py` | GRU sequence model: a stable-beam correction of the hybrid from the last 64 shots, trained across runs (below); needs PyTorch |
 | `gru_window_sweep.py` | Reruns the GRU for context windows of 8–256 shots |
 | `forecast_uncertainty.py` | Bootstrap intervals for the MAE gains, and 90 % prediction intervals for the combined forecaster (below) |
-| `screen_variables.py` | Tests whether the notebook variables (klystron, gun field, magnets, climate, laser scope) help the next-shot forecast |
-| `virtual_bcm.py` | Same-shot virtual BCM: shot n's charge from shot n's own laser readings plus the BCM history (below) |
+| `screen_variables.py` | Tests whether the notebook variables (klystron, gun field, magnets, climate, laser scope, camera) help the next-shot forecast |
+| `virtual_bcm.py` | Same-shot virtual BCM: shot n's charge from shot n's own laser readings (and camera, if present) plus the BCM history (below) |
+| `camera_features.py` | Puts the camera features from `extract_features.py` (`results/datasets/`) on the pulse grid, drops dark frames → `<run>_camera.npz` |
 
 Run the scripts with `python -I`. The tables match the ones made from the pickles, except that the camera
 columns are left out.
@@ -331,16 +332,19 @@ Seed-to-seed spread of the test MAE: ≤ 0.0017 nC. Every fit beats the hybrid o
 
 ### Do the notebook variables help? (`screen_variables.py`, `results/gru/screen_variables.txt`)
 
-- **Same shot, they correlate as the notebooks found.** Against the charge jitter: lab 0.61–0.62, clex 0.55–0.60,
-  laser scope 0.38–0.45, step 0.28–0.42. Klystron, gun field, magnets, temperatures and humidities are all |r| < 0.08.
-- **For the next shot, none of them helps.** Added to the correction, each group changes the stable-beam MAE on an
-  unseen run by less than 0.4 %. All of them together make run 3 0.6 % worse.
+- **Same shot, they correlate as the notebooks found.** Against the charge jitter: camera intensity 0.46–0.89
+  (run 3 / run 1), lab 0.61–0.62, clex 0.55–0.60, laser scope 0.38–0.45, step 0.28–0.42. Klystron, gun field, magnets,
+  temperatures and humidities are all |r| < 0.08.
+- **For the next shot, none of them helps, the camera included.** Added to the correction, each group changes the
+  stable-beam MAE on an unseen run by −0.1 to +0.7 %. All of them together make it 0.1–0.9 % worse.
   - The jitter is laser-driven, and the next pulse's laser energy is not predictable from earlier pulses.
   - The slow variables (temperature, humidity, magnets) do not lead the charge drift by enough to matter.
 - **A trap:** the laser scope shifted one pulse early correlates 0.22–0.30 with the next-shot error, more than twice
   the lab meter. That is because it is the next shot's laser reading, which is future data. Its same-shot r peaks at
   the stamp alignment, which confirms the stamp alignment. Any new variable that suddenly predicts well should get
   this check.
+- The screen used to interpolate the variables across gaps, which fills shot n partly from shot n+1, the same leak
+  as in `run_data`. It now carries the last reading forward. The conclusions did not change.
 
 ### Where the error is
 
@@ -414,17 +418,22 @@ only matter for run 1's last few shots.
 ## Same-shot virtual BCM (`virtual_bcm.py`, `results/virtual_bcm/`)
 
 ```bash
+python3 -I scripts/camera_features.py data/h5 results/datasets data/tables 2026-10-09_07-46-07 2026-10-08_21-11-47 \
+    2026-10-08_00-08-19 2026-10-07_21-43-26 2026-10-08_15-42-27      # optional: the camera inputs below
 python3 -I scripts/virtual_bcm.py data/tables results/virtual_bcm 2026-10-09_07-46-07 2026-10-08_21-11-47 2026-10-08_00-08-19 \
     2026-10-07_21-43-26 2026-10-08_15-42-27
 ```
 
-**What it is:** an estimate of shot n's charge from shot n's own laser readings, plus the BCM history up to shot n−1.
+**What it is:** an estimate of shot n's charge from shot n's own laser and camera readings, plus the BCM history up
+to shot n−1.
 It is not a forecast, because it needs shot n's instruments. Uses: a cross-check on the BCM, or a stand-in while
 the BCM reads wrong.
 
 **How it works:** log(Q[n] / hybrid level after shot n−1) = a ridge on
 - the combined forecaster's history features;
-- for lab, clex and the laser scope: log(reading[n] / its segment mean over the last 20 and 200 shots).
+- for lab, clex and the laser scope: log(reading[n] / its segment mean over the last 20 and 200 shots);
+- the same for the camera features, if `<run>_camera.npz` exists: screen intensity, peak amplitude, spot sizes along
+  the spot's axes, and the 6 largest singular values of the binned image.
 
 A missing reading gives a feature of 0. The ridge is trained on all good shots of the first 90 %, not only stable
 ones, because level changes are where it should help. There are two ridges: one for when the hybrid level is above
@@ -436,7 +445,12 @@ ones, because level changes are where it should help. There are two ridges: one 
 | virtual BCM, lab only, pooled runs | 0.258 (−18 %) | 0.1178 (−17 %) | 0.1336 (−4 %) | 0.0167 (−13 %) | 0.0116 (−3 %) |
 | **virtual BCM, lab + clex + scope, pooled runs** | **0.252 (−20 %)** | **0.1165 (−18 %)** | **0.1315 (−5 %)** | **0.0121 (−37 %)** | **0.0103 (−13 %)** |
 | virtual BCM, lab + clex + scope, other runs only | 0.251 (−20 %) | 0.1169 (−17 %) | 0.1320 (−5 %) | 0.0121 (−37 %) | 0.0107 (−10 %) |
+| virtual BCM, camera intensity only, pooled runs | 0.199 (−37 %) | 0.0967 (−32 %) | **0.0889 (−36 %)** | 0.0115 (−40 %) | 0.0093 (−22 %) |
+| virtual BCM, lab + clex + scope + camera intensity, pooled runs | 0.194 (−39 %) | 0.0935 (−34 %) | 0.1013 (−27 %) | 0.0105 (−45 %) | 0.0091 (−24 %) |
+| **virtual BCM, lab + clex + scope + all camera features, pooled runs** | **0.177 (−44 %)** | **0.0903 (−36 %)** | 0.0913 (−34 %) | **0.0099 (−48 %)** | **0.0087 (−27 %)** |
+| virtual BCM, lab + clex + scope + all camera features, other runs only | 0.178 (−44 %) | 0.0925 (−35 %) | 0.0831 (−40 %) | 0.0098 (−49 %) | 0.0095 (−20 %) |
 | BCM lost at the cut: laser × frozen charge/laser ratio | 0.232 | 0.1655 | 0.1701 | 0.0199 | 0.0234 |
+| BCM lost at the cut: camera × frozen charge/intensity ratio | 0.261 | 0.1692 | 0.1018 | 0.0121 | 0.0103 |
 | BCM lost at the cut: step − frozen offset | 0.344 | 0.355 | 0.363 | 0.347 | 0.364 |
 
 - **On stable beam, seeing the shot's own laser cuts the error by 18–21 % on runs 1 and 2:** run 1 0.238 vs 0.302 nC,
@@ -457,8 +471,25 @@ ones, because level changes are where it should help. There are two ridges: one 
     better than the hybrid (0.232 vs 0.316), and on run 4 it matches it.
   - It fails on runs 2, 3 and 5 (17–96 % worse than the hybrid), because the charge per uJ drifts.
   - The step stand-in fails everywhere.
-- **The camera may help here.** Notebook 07_02 finds the screen intensity (BTV_intensity) at r = 0.68–0.81 with the
-  charge jitter in run 1's clean segments, close to the lab meter. Before using it, recheck with dropouts removed
-  (see the klystron note above), and check its pulse alignment, because the camera read is slow and misses pulses.
+- **The camera roughly doubles the gain.** With all camera features the error falls by 27–48 % against the hybrid,
+  against 5–37 % from the laser alone. On stable beam: run 1 0.168 vs 0.302 nC, run 2 0.090 vs 0.141, run 3 0.091
+  vs 0.139.
+  - The screen sees the beam itself, so it is a second charge measurement rather than a laser proxy. Its intensity
+    follows the charge with a slope of 0.5–1.2 in log, and with r = 0.78–0.93 in the test regions.
+  - It transfers: trained on the other runs only, it is as good on runs 1 and 4, better on run 3, and worse on runs 2
+    and 5 by 0.001–0.002 nC.
+  - The spot shape and singular values add 3–9 % beyond the intensity on runs 1, 2, 4 and 5. On run 3 the intensity
+    alone is best, and adding the laser makes it worse there.
+- **Camera alignment** (`camera_features.py`, `results/virtual_bcm/camera_features.txt`):
+  - The camera's own cycle stamp names its pulse. For 0.3–21 % of rows (by run) it is one or two pulses after the
+    row's trigger, so the row is not the image's pulse.
+  - At the stamp alignment the intensity's r with the charge jitter is 0.35–0.90; one pulse either side gives ≤ 0.30.
+  - `extract_features.py` leaves the camera on its row, which matches the stamp for most rows.
+- **Dark frames.** 0–1 % of images read 1–20 % of the usual intensity while the BCM and the laser are normal. Each one
+  gives a huge log-ratio feature, and in the training parts of runs 3–5 they cut the camera's r from ~0.85 to 0.14–0.20,
+  so the ridge learned to ignore the camera. `camera_features.py` drops a frame below 30 % of the median of the
+  previous 50 when the lab laser has not dropped. Milder outliers remain: Spearman r is still above Pearson r there.
+- **With no BCM, the camera is the better stand-in on runs 3–5** (17–37 % better than the hybrid). Its intensity per
+  nC drifts too: on run 2 it is 20 % worse than the hybrid. The laser ratio is still better on run 1.
 - **How the interpolation leak was found.** The first version overshot after big jumps up (30 nC predicted against
   18 nC). The interpolated meters ramped linearly across gaps after a jump, so shot n's "reading" was partly shot n+1's.
