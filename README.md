@@ -1,6 +1,8 @@
 # Fast-Approximate
 Artifact Hackathon 
 
+clean data in: Result/datasets
+
 
 Data from here:
 https://cernbox.cern.ch/s/yVioydShmcGKkto
