@@ -1,21 +1,15 @@
 {
   "features": [
     "lab_laser_power",
-    "BTV_intensity",
     "PGLA_drop",
-    "BTV_amplitude",
-    "PKI15A",
-    "BTV_mean_x",
-    "BTV_sigma_major",
-    "BTV_sigma_minor",
-    "BTV_tilt",
-    "BTV_ellipticity",
     "SVD_s1",
-    "SVD_s2",
-    "SVD_s3",
-    "SVD_s4",
+    "BTV_intensity",
     "SVD_s5",
-    "SVD_s6"
+    "SVD_s6",
+    "SVD_s4",
+    "PKI15A",
+    "BTV_tilt",
+    "BTV_mean_x"
   ],
   "target": "BCM_GUN",
   "cuts_file": "/lustre/work/pdl18409/shared/data/optimisation/teams/fast-approximate/Fast-Approximate/config/CLEAN_CUTS.toml",

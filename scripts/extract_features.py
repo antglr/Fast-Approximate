@@ -1,7 +1,8 @@
 # Per-segment model datasets from the clean chunks (config/CLEAN_CUTS.toml): X = FEATURES, y = BCM_GUN.
-# Preprocessing as notebooks 05_correlations_runs / 07_02: laser matched filter with a per-segment template,
+# Preprocessing as notebooks 05_correlations_runs / 07_02 / 07_03: laser matched filter with a per-segment template,
 # group B one row later within the segment, classic BTV parameters (notebook 04) + spot-shape PCA, per-image SVD
-# singular values, and optionally the across-image PCA scores (notebook 04_1 / 07_02, fitted on all shots: leaking).
+# singular values (NaN on a blank image, as the BTV parameters), and optionally the across-image PCA scores
+# (notebook 04_1 / 07_02, fitted on all shots: leaking).
 # Rows are never dropped (time congruency): frozen laser / camera shots and the shift's last row are flagged instead.
 # Output: OUT/segment_XX.npz per segment + OUT/manifest.json.  Usage: python -I extract_features.py
 import json
@@ -22,11 +23,10 @@ except ModuleNotFoundError:
 # ---------------------------------------------------------------------------
 # Configuration (edit here)
 # ---------------------------------------------------------------------------
-# Union of the per-segment selections of 07_03 (Overall r, R_MIN = 0.25, R_CROSS = 0.5) without the PCs (PC3-6,
-# leaking), plus the per-image camera features under test: spot-shape PCA and per-image SVD (no fit, no leakage)
-FEATURES = ["lab_laser_power", "BTV_intensity", "PGLA_drop", "BTV_amplitude", "PKI15A", "BTV_mean_x",
-            "BTV_sigma_major", "BTV_sigma_minor", "BTV_tilt", "BTV_ellipticity",
-            "SVD_s1", "SVD_s2", "SVD_s3", "SVD_s4", "SVD_s5", "SVD_s6"]
+# Union of the per-segment selections of 07_03 (Overall r, R_MIN = 0.25, R_CROSS = 0.5), camera described by the
+# spot-shape PCA and the per-image SVD (no fit, no leakage): results/data_labelling/segment_correlations/selected_features.json
+FEATURES = ["lab_laser_power", "PGLA_drop", "SVD_s1", "BTV_intensity", "SVD_s5", "SVD_s6", "SVD_s4", "PKI15A",
+            "BTV_tilt", "BTV_mean_x"]
 TARGET = "BCM_GUN"
 
 REPO = Path(__file__).resolve().parent.parent
@@ -175,7 +175,9 @@ def chunk_features(fp, x_mm, y_mm, need_classic, need_pca, need_svd):
                 small = img[:h, :w].reshape(h // BIN, BIN, w // BIN, BIN).mean(axis=(1, 3))
                 if need_pca:
                     binned[i] = small
-                if need_svd:   # per-image SVD of the binned image: singular values only (the basis differs per image)
+                # per-image SVD of the binned image: singular values only (the basis differs per image); a blank
+                # image (no beam found) keeps NaN: its singular values are background only
+                if need_svd and not np.isnan(classic[i, 0]):
                     svd[i] = np.linalg.svd(small, compute_uv=False)[:N_SVD]
         out["classic"], out["binned"], out["svd"] = classic, binned, svd
     return out
@@ -196,9 +198,9 @@ def main():
     unknown = [f for f in FEATURES if f not in AVAILABLE]
     if unknown:
         raise SystemExit(f"unknown features {unknown}; available: {AVAILABLE}")
-    need_classic = any(f.startswith("BTV_") for f in FEATURES)
     need_pca = any(f in PCS for f in FEATURES)
     need_svd = any(f in SVDS for f in FEATURES)
+    need_classic = any(f.startswith("BTV_") for f in FEATURES) or need_svd   # the SVD needs the blank-image check
 
     data_root = next(Path(p) for p in DATA_CANDIDATES if p and Path(p).is_dir())
     segs = segments_of(clean_chunks(CUTS_FILE, data_root))

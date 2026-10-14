@@ -1,15 +1,15 @@
 {
   "features": [
     "lab_laser_power",
-    "BTV_intensity",
     "PGLA_drop",
-    "BTV_amplitude",
-    "PC4",
+    "SVD_s1",
+    "BTV_intensity",
+    "SVD_s5",
+    "SVD_s6",
+    "SVD_s4",
     "PKI15A",
-    "PC6",
-    "BTV_mean_x",
-    "PC3",
-    "PC5"
+    "BTV_tilt",
+    "BTV_mean_x"
   ],
   "kind": "Overall",
   "R_MIN": 0.25,
