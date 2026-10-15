@@ -25,3 +25,4 @@ figures/
 .vscode/
 .idea/
 results/data_labelling/.chunk_scan_cache.pkl
+slurm_logs/
