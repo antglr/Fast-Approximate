@@ -1,0 +1,30 @@
+ridge, current shot, low charge: early-stopping-row mean square vs no correction, per (LAM, RHO): {(0.999, 10): 0.984, (0.999, 100): 0.982, (0.999, 1000): 0.987, (0.9997, 10): 0.987, (0.9997, 100): 0.991, (0.9997, 1000): 0.989, (0.9999, 10): 0.984, (0.9999, 100): 0.993, (0.9999, 1000): 0.991} -> use (0.999, 100)
+ridge, current shot, high, repetitive: early-stopping-row mean square vs no correction, per (LAM, RHO): {(0.999, 10): 0.914, (0.999, 100): 0.919, (0.999, 1000): 0.941, (0.9997, 10): 0.938, (0.9997, 100): 0.941, (0.9997, 1000): 0.95, (0.9999, 10): 0.982, (0.9999, 100): 0.983, (0.9999, 1000): 0.983} -> use (0.999, 10)
+ridge, current shot, high, non-repetitive: early-stopping-row mean square vs no correction, per (LAM, RHO): {(0.999, 10): 0.836, (0.999, 100): 0.849, (0.999, 1000): 0.912, (0.9997, 10): 0.86, (0.9997, 100): 0.869, (0.9997, 1000): 0.896, (0.9999, 10): 0.899, (0.9999, 100): 0.906, (0.9999, 1000): 0.923} -> use (0.999, 10)
+ridge, + past BCM + GRU, L=64, past BCM, low charge: early-stopping-row mean square vs no correction, per (LAM, RHO): {(0.999, 10): 1.003, (0.999, 100): 0.999, (0.999, 1000): 0.991, (0.9997, 10): 0.999, (0.9997, 100): 1.002, (0.9997, 1000): 0.994, (0.9999, 10): 0.995, (0.9999, 100): 1.001, (0.9999, 1000): 0.996} -> use (0.999, 1000)
+ridge, + past BCM + GRU, L=64, past BCM, high, repetitive: early-stopping-row mean square vs no correction, per (LAM, RHO): {(0.999, 10): 0.991, (0.999, 100): 0.99, (0.999, 1000): 0.992, (0.9997, 10): 0.996, (0.9997, 100): 0.996, (0.9997, 1000): 0.995, (0.9999, 10): 1.006, (0.9999, 100): 1.006, (0.9999, 1000): 1.005} -> use (0.999, 100)
+ridge, + past BCM + GRU, L=64, past BCM, high, non-repetitive: early-stopping-row mean square vs no correction, per (LAM, RHO): {(0.999, 10): 0.983, (0.999, 100): 0.98, (0.999, 1000): 0.983, (0.9997, 10): 0.98, (0.9997, 100): 0.981, (0.9997, 1000): 0.983, (0.9999, 10): 0.979, (0.9999, 100): 0.98, (0.9999, 1000): 0.981} -> use (0.9999, 10)
+
+jitter explained %, test regions
+seg                                                  0     1     2     3     4     5     6     7
+model                                                                                           
+ridge, current shot                               68.1  63.3  13.0  28.3  38.5  74.1  79.0  89.0
+ridge, current shot + online                      71.9  67.8  -3.2  28.1  42.0  78.9  93.1  95.4
+ridge, + past BCM + GRU, L=64, past BCM           73.1  84.5  24.5  29.2  48.8  89.0  93.1  90.9
+ridge, + past BCM + GRU, L=64, past BCM + online  73.5  84.4  22.8  29.0  48.5  89.0  94.8  90.6
+
+rel %, test regions
+seg                                                  0     1     2     3     4     5     6     7
+model                                                                                           
+ridge, current shot                               4.07  1.76  4.53  7.14  7.94  1.18  1.01  1.68
+ridge, current shot + online                      3.79  1.37  4.78  7.16  7.67  1.03  0.57  1.27
+ridge, + past BCM + GRU, L=64, past BCM           3.76  0.95  4.01  6.94  7.22  0.69  0.55  1.42
+ridge, + past BCM + GRU, L=64, past BCM + online  3.72  0.95  4.07  6.96  7.24  0.69  0.49  1.28
+
+MAE pC, test regions
+seg                                                  0     1    2    3    4     5     6      7
+model                                                                                         
+ridge, current shot                               10.0  84.6  6.3  9.4  8.9  69.5  57.0  174.4
+ridge, current shot + online                       9.3  65.8  6.6  9.4  8.6  60.4  32.4  131.4
+ridge, + past BCM + GRU, L=64, past BCM            9.2  45.7  5.6  9.1  8.1  40.8  31.0  147.0
+ridge, + past BCM + GRU, L=64, past BCM + online   9.1  45.8  5.6  9.2  8.1  40.7  27.8  133.2

@@ -1,45 +1,45 @@
 low charge, ridge, current shot: alpha 38.6
 low charge, ridge, + past BCM: alpha 38.6
 low charge: 14368 training, 1598 early-stopping shots
-  RNN, L=1: epochs [14, 28, 14], 5 s
-  GRU, L=1: epochs [23, 21, 16], 4 s
-  RNN, L=16: epochs [28, 21, 24], 14 s
-  GRU, L=16: epochs [23, 25, 14], 38 s
-  RNN, L=64: epochs [28, 21, 20], 58 s
-  GRU, L=64: epochs [23, 24, 22], 112 s
-  GRU, L=16, past BCM: epochs [24, 15, 19], 23 s
-  ridge, current shot + GRU, L=1: epochs [15, 18, 9], 3 s
-  ridge, current shot + GRU, L=16: epochs [13, 13, 14], 14 s
-  ridge, + past BCM + GRU, L=16, past BCM: epochs [13, 12, 19], 17 s
-  ridge, + past BCM + GRU, L=64, past BCM: epochs [24, 12, 18], 85 s
+  RNN, L=1: epochs [14, 28, 14], 6 s
+  GRU, L=1: epochs [23, 21, 16], 5 s
+  RNN, L=16: epochs [28, 21, 24], 17 s
+  GRU, L=16: epochs [23, 25, 14], 36 s
+  RNN, L=64: epochs [28, 21, 20], 62 s
+  GRU, L=64: epochs [23, 24, 22], 159 s
+  GRU, L=16, past BCM: epochs [24, 15, 19], 38 s
+  ridge, current shot + GRU, L=1: epochs [15, 18, 9], 4 s
+  ridge, current shot + GRU, L=16: epochs [13, 13, 14], 26 s
+  ridge, + past BCM + GRU, L=16, past BCM: epochs [13, 12, 19], 25 s
+  ridge, + past BCM + GRU, L=64, past BCM: epochs [24, 12, 18], 129 s
 high, repetitive, ridge, current shot: alpha 0.0053
 high, repetitive, ridge, + past BCM: alpha 0.0053
 high, repetitive: 16133 training, 1793 early-stopping shots
-  RNN, L=1: epochs [28, 39, 25], 4 s
-  GRU, L=1: epochs [29, 20, 20], 4 s
-  RNN, L=16: epochs [27, 22, 23], 11 s
-  GRU, L=16: epochs [25, 40, 20], 35 s
-  RNN, L=64: epochs [27, 22, 23], 58 s
-  GRU, L=64: epochs [33, 37, 20], 171 s
-  GRU, L=16, past BCM: epochs [30, 40, 27], 53 s
-  ridge, current shot + GRU, L=1: epochs [16, 23, 17], 5 s
-  ridge, current shot + GRU, L=16: epochs [27, 19, 29], 36 s
-  ridge, + past BCM + GRU, L=16, past BCM: epochs [20, 39, 28], 39 s
-  ridge, + past BCM + GRU, L=64, past BCM: epochs [32, 39, 31], 151 s
+  RNN, L=1: epochs [28, 39, 25], 7 s
+  GRU, L=1: epochs [29, 20, 20], 7 s
+  RNN, L=16: epochs [27, 22, 23], 20 s
+  GRU, L=16: epochs [25, 40, 20], 60 s
+  RNN, L=64: epochs [27, 22, 23], 69 s
+  GRU, L=64: epochs [33, 37, 20], 250 s
+  GRU, L=16, past BCM: epochs [30, 40, 27], 82 s
+  ridge, current shot + GRU, L=1: epochs [16, 23, 17], 9 s
+  ridge, current shot + GRU, L=16: epochs [27, 19, 29], 67 s
+  ridge, + past BCM + GRU, L=16, past BCM: epochs [20, 39, 28], 74 s
+  ridge, + past BCM + GRU, L=64, past BCM: epochs [32, 39, 31], 303 s
 high, non-repetitive, ridge, current shot: alpha 7.28
 high, non-repetitive, ridge, + past BCM: alpha 7.28
 high, non-repetitive: 20632 training, 2294 early-stopping shots
-  RNN, L=1: epochs [23, 18, 14], 3 s
-  GRU, L=1: epochs [19, 23, 12], 4 s
-  RNN, L=16: epochs [31, 20, 28], 17 s
-  GRU, L=16: epochs [23, 23, 25], 30 s
-  RNN, L=64: epochs [31, 20, 28], 53 s
-  GRU, L=64: epochs [30, 24, 25], 174 s
-  GRU, L=16, past BCM: epochs [29, 37, 24], 47 s
-  ridge, current shot + GRU, L=1: epochs [25, 17, 12], 3 s
-  ridge, current shot + GRU, L=16: epochs [20, 24, 18], 37 s
-  ridge, + past BCM + GRU, L=16, past BCM: epochs [35, 23, 18], 44 s
-  ridge, + past BCM + GRU, L=64, past BCM: epochs [26, 37, 24], 156 s
+  RNN, L=1: epochs [23, 18, 14], 6 s
+  GRU, L=1: epochs [19, 23, 12], 7 s
+  RNN, L=16: epochs [31, 20, 28], 28 s
+  GRU, L=16: epochs [23, 23, 25], 65 s
+  RNN, L=64: epochs [31, 20, 28], 96 s
+  GRU, L=64: epochs [30, 24, 25], 245 s
+  GRU, L=16, past BCM: epochs [29, 37, 24], 56 s
+  ridge, current shot + GRU, L=1: epochs [25, 17, 12], 6 s
+  ridge, current shot + GRU, L=16: epochs [20, 24, 18], 40 s
+  ridge, + past BCM + GRU, L=16, past BCM: epochs [35, 23, 18], 43 s
+  ridge, + past BCM + GRU, L=64, past BCM: epochs [26, 37, 24], 219 s
 
 test regions (last 10 % of each clean segment); target = log(Q / geometric mean of the previous 50 good BCM readings)
              run                regime     n   level  target rms %

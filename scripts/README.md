@@ -36,6 +36,8 @@ PY=python3 scripts/run_pipeline.sh 2026-10-09_07-46-07 data/h5 data/tables resul
 | `jitter_sequence.py` | Shot-to-shot jitter against the trailing BCM level, from the instruments' own jitter: ridge vs RNN vs GRU per regime (below) |
 | `bcm_noise_floor.py` | The BCM's own shot-to-shot noise (three-cornered hat: BCM, camera, step / clex / lab): the floor for the jitter models (below) |
 | `jitter_input_screen.py` | Screens laser-pulse shape and RF flat-top readings as extra jitter inputs (below): they add nothing |
+| `jitter_online.py` | Shot-by-shot refit of a linear correction on top of the jitter models, using the BCM up to the previous shot (below) |
+| `jitter_noise_plot.py` | Distribution of the BCM noise vs the jitter models' residuals; is the noise Gaussian? (below) |
 
 Run the scripts with `python -I`. The tables match the ones made from the pickles, except that the camera
 columns are left out.
@@ -739,4 +741,74 @@ The screen tests two groups of readings that are not used yet. Each is added to 
 - **What is left:** the remaining gaps to the BCM noise floor on segs 5, 1 and 3 must come from the camera, from
   nonlinear structure (the GRU already takes some), or from a floor that is higher than estimated. The high-charge
   floor is uncertain by ~2×.
+
+## Online correction: refit after every shot (`jitter_online.py`, `results/jitter_online/`)
+
+```bash
+python3 -I scripts/jitter_online.py data/tables results/jitter_sequence 2026-10-07_21-43-26 2026-10-08_00-08-19 \
+    2026-10-08_15-42-27 2026-10-08_21-11-47 2026-10-09_07-46-07
+```
+
+`jitter_sequence.py` now saves every model's predicted jitter to `results/jitter_sequence/jitter_predictions.parquet`.
+The trailing level already assumes the BCM is read up to the previous shot, so the offline model's recent errors are
+known too. After every shot, an exponentially weighted ridge on the residual is refitted on the same inputs (+ a
+constant), and the next shot's prediction is corrected:
+
+    w_n = argmin_w  sum_{m<n} LAM^(n-1-m) (r_m - w.z_m)^2 + RHO |w|^2,   r = target - offline prediction
+
+- Each segment starts from the offline model (w = 0), and a shot only uses the shots before it.
+- LAM (memory 1000–10000 shots) and RHO (10–1000) are picked per regime on the early-stopping rows, and so is "no
+  correction". The test regions are never used for the choice.
+
+| MAE pC, test regions | seg 0 | seg 3 | seg 4 | seg 5 | seg 1 | seg 6 | seg 7 |
+|---|---|---|---|---|---|---|---|
+| ridge, current shot | 10.0 | 9.4 | 8.9 | 69.5 | 84.6 | 57.0 | 174.4 |
+| ridge + online | 9.3 | 9.4 | 8.6 | 60.4 | 65.8 | 32.4 | 131.4 |
+| best offline: ridge + past BCM + GRU, L=64 | 9.2 | 9.1 | 8.1 | 40.8 | 45.7 | 31.0 | 147.0 |
+| best offline + online | 9.1 | 9.2 | 8.1 | 40.7 | 45.8 | **27.8** | **133.2** |
+
+- **On the ridge, online helps a lot:** −22 % on seg 1, −43 % on seg 6 and −25 % on seg 7. The ridge's coefficients
+  drift within a run, and the refit follows them.
+- **On the best model, online helps only on segs 6 and 7:** 31.0 → 27.8 pC and 147 → 133 pC (seg 7 has 10 nC, a level
+  the training never saw). Elsewhere the GRU has already taken what a linear refit can find: on the low-charge and
+  repetitive regimes, the grid's best choice is within 1 % of no correction.
+- **Recommendation:** use the best offline model + online correction. It costs one 25 × 25 solve per shot and never
+  does worse than the offline model on these test regions by more than 0.1 pC.
+
+## Is the BCM noise Gaussian? (`jitter_noise_plot.py`, `results/noise_floor/jitter_noise.png`, `jitter_noise.txt`)
+
+```bash
+python3 -I scripts/jitter_noise_plot.py data/tables results/jitter_sequence results/noise_floor/jitter_noise.png \
+    2026-10-07_21-43-26 2026-10-08_00-08-19 2026-10-08_15-42-27 2026-10-08_21-11-47 2026-10-09_07-46-07
+```
+
+The three-cornered hat gives the noise's width, not the noise of each shot, so its shape is checked two ways on the
+test regions (log-y histograms in the plot):
+- **the best model's residual:** where the model is at the floor (segs 0, 4, 6), the residual is mostly noise;
+- **d = BCM − k camera,** with k = cov(BCM, lab) / cov(camera, lab): this cancels the charge and leaves the BCM noise
+  plus the camera noise, with no model involved.
+
+| test regions | seg 0 | seg 3 | seg 4 | seg 5 | seg 1 | seg 6 | seg 7 |
+|---|---|---|---|---|---|---|---|
+| BCM noise, % of level (hat) | 4.78 | 8.96 | 9.80 | 0.68 | 1.19 | 0.61 | 0.71 |
+| BCM noise, pC | 11.7 | 11.8 | 11.0 | 40 | 57 | 34 | 73 |
+| residual excess kurtosis | 2.0 | 14.4 | 5.6 | 21.6 | 9.7 | 2.4 | 34.8 |
+| residual beyond 4σ, % (Gaussian 0.006) | 0.50 | 0.57 | 0.22 | 0.95 | 1.19 | 0.24 | 1.50 |
+| residual lag-1 autocorrelation | 0.02 | 0.24 | 0.07 | 0.04 | 0.14 | 0.02 | 0.22 |
+| d excess kurtosis | 1.5 | 12.8 | 0.3 | 2.1 | 106 | 2.9 | 0.6 |
+
+- **The core is Gaussian:** the residual follows the hat's Gaussian down to a few % of the peak on segs 0, 4, 5 and 6.
+- **The tails are heavier:** 0.2–1.5 % of shots lie beyond 4σ, against 0.006 % for a Gaussian. The large kurtosis
+  values come from a handful of shots (seg 1's d: a few camera glitches). At low charge the tails lean negative (skew
+  −0.5 to −2): additive noise in pC becomes skewed in log, and some shots lose charge.
+- **The noise is white:** lag-1 autocorrelation ≤ 0.07 where the model is at the floor. Segs 1, 3 and 7 (0.14–0.24)
+  have correlated residual: that is model error, not noise, and it matches their gap to the floor.
+- **The noise is a fixed ~11.5 pC plus ~0.6–0.7 % of the charge:** the low-charge segments have the same noise in pC
+  (11.0–11.8 pC at 0.11–0.25 nC), so it is additive electronic noise. At high charge it is 34–73 pC, about
+  sqrt(11.5² + (0.006 Q)²); seg 1 is ~2× higher.
+
+**For a Gaussian process:** a Gaussian likelihood fits the core. Use a white-noise term with its variance fixed (or
+given a tight prior) from the hat, σ_n(Q)² ≈ (11.5 pC)² + (0.0065 Q)², rather than learned: a learned noise term absorbs
+real jitter. No correlated noise term is needed. For the ~1 % tail shots, use a Student-t likelihood or clip the shots
+beyond 5 MAD before fitting.
 

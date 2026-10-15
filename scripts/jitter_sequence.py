@@ -13,7 +13,8 @@
 #              of each segment's training part, SEEDS averaged
 #   ridge + GRU  the GRU learns the ridge's residual, so the ridge keeps extrapolating where the GRU saturates
 # Split and test regions as same_shot_regression.py. Scores per test segment: jitter explained = 1 - mean square of
-# (target - prediction) / mean square of the target; MAE of the total charge in % of the level and in pC.
+# (target - prediction) / mean square of the target; MAE of the total charge in % of the level and in pC. The predicted
+# jitter of every model is saved to <out>/jitter_predictions.parquet (for jitter_online.py).
 # Usage: python -I jitter_sequence.py <tables dir> <out dir> <run> [<run> ...]
 import os, sys, time
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -135,6 +136,7 @@ def main():
             P.setdefault(name, pd.Series(np.nan, F.index))[R] = b[R] + np.mean(preds, 0)
             print(f'  {name}: epochs {eps}, {time.time() - t0:.0f} s', flush=True)
 
+    pd.DataFrame(P).assign(run=F.run, shot=F.shot).to_parquet(os.path.join(out, 'jitter_predictions.parquet'))
     test = ~F.train & ok
     rows = []
     for name, p in P.items():
