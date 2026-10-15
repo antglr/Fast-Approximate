@@ -63,3 +63,23 @@ for every model).
 - 90 % intervals: split-conformal around the stack covers 79–99 %, the GP's own 84–99 %. Both have a constant width per
   regime; the low-charge segments 3 / 4 are under-covered, the high-charge ones over-covered → heteroscedastic noise
   model next.
+
+## 5. Forecasting the level from the BCM history alone (`scripts/level_forecast.py`)
+
+Change of the test MAE against the mean of the last 9 good shots (challenge baseline), negative = better.
+GP on time (Matérn 5/2 + noise, + a 2048-shot periodic term on seg 5), hyperparameters fitted on the training part,
+each forecast conditioned only on the good shots up to t − h (`results/level_forecast_v1/`).
+
+| h | seg 1 | seg 6 | seg 7 | seg 5 | seg 0 | seg 3 | seg 4 |
+|---|---|---|---|---|---|---|---|
+| 1 | −1.9 | +1.6 | −4.5 | −1.7 | −3.9 | −1.1 | −1.1 |
+| 10 | −3.3 | −7.8 | −0.2 | −1.0 | −6.4 | −3.3 | −0.9 |
+| 50 | −2.5 | −5.1 | −3.1 | +0.3 | −3.3 | −8.1 | −2.7 |
+
+- The GP beats the baseline on 6/7 segments at h = 1 and 50, and on all 7 at h = 10; gains are 1–8 %. Not yet tested
+  for significance (block bootstrap as in `forecast_uncertainty.py`).
+- The robust EMA, the best filter for the decomposition, is a poor forecaster (up to +7 % at h = 50 on seg 4): the
+  best level for removing the trend is not the best guess of the next level.
+- **Negative result:** adding the ~190-shot cycle seen in the spectra (seg 5: 2048 + 188 shots, seg 1: 200) does not
+  help at h ≤ 10 and hurts at h = 50 (seg 5 +3.9 %, seg 1 +1.9 %; `results/level_forecast_periodic190/`). The cycle is
+  in the spectrum but its phase does not hold long enough to extrapolate.
