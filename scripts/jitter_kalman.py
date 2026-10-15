@@ -7,7 +7,8 @@
 # by the level's one-step MAE in pC. Compared with the trailing mean and a robust EMA (half-life 25 shots, 4-sigma
 # gate on the training-part jitter MAD, as adnan_01). Test MAE in pC per segment, of the level alone and of the level
 # plus jitter_sequence.py's ridges refitted on each level's target (inputs unchanged: fast parts of the instruments).
-# Usage: python -I jitter_kalman.py <tables dir> <run> [<run> ...]
+# Plot: the charge and each level on the last 600 shots of every segment (test region shaded).
+# Usage: python -I jitter_kalman.py <tables dir> <out png> <run> [<run> ...]
 import os, sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import numpy as np
@@ -64,7 +65,7 @@ def ema(y, seg, sd, half=HALF):
 
 
 def main():
-    tables, runs = sys.argv[1], sys.argv[2:]
+    tables, png, runs = sys.argv[1], sys.argv[2], sys.argv[3:]
     F = stitched(tables, runs)
     y = np.log(F.Q.where(F.Q > 0))
     seg = F.seg.values
@@ -140,6 +141,28 @@ def main():
     order = [f'{l}, {p}' for p in ('level only', '+ ridge, current shot', '+ ridge, + past BCM') for l in levels]
     print('\nMAE pC, test regions')
     print(D.pivot_table(index='model', columns='seg', values='MAE pC').reindex(order).round(1).to_string())
+
+    import matplotlib; matplotlib.use('Agg')
+    import matplotlib.pyplot as plt
+    segs = sorted(set(F.seg))
+    fig, axes = plt.subplots((len(segs) + 1) // 2, 2, figsize=(16, 3 * ((len(segs) + 1) // 2)))
+    for a, g in zip(axes.flat, segs):
+        i = F.index[F.seg == g][-600:]
+        a.plot(i, F.Q[i], '.', color='0.6', ms=2, label='BCM charge')
+        for (name, lev), c in zip({k: v for k, v in levels.items() if not k.endswith('inputs too')}.items(), ('k', 'C2', 'C0', 'C3')):
+            a.plot(i, np.exp(lev[i]), color=c, lw=1, label=name)
+        t = i[~F.train[i]]
+        a.axvspan(t[0], t[-1], color='C1', alpha=0.1, label='test region')
+        lo, hi = F.Q[i].quantile([0.01, 0.99])
+        a.set_ylim(lo - 0.1 * (hi - lo), hi + 0.1 * (hi - lo))
+        a.set_title(f'segment {g}, {F.regime[i[0]]}', fontsize=9); a.set_ylabel('nC')
+    axes.flat[0].legend(fontsize=7, ncol=3)
+    for a in axes.flat[len(segs):]:
+        a.axis('off')
+    axes.flat[len(segs) - 1].set_xlabel('row (stitched good shots)')
+    fig.suptitle('slow part: trailing mean vs robust EMA vs Kalman level (one-step predictions from earlier shots)', fontsize=10)
+    fig.tight_layout(); fig.savefig(png, dpi=100)
+    print('->', png)
 
 
 if __name__ == '__main__':
