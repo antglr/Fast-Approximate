@@ -106,6 +106,7 @@ the instruments pay in the same-shot virtual diagnostic.
 - `13_models_gp_ensembles_floor.ipynb`: GP, ensembles, stacking weights, gap to the BCM noise floor, intervals.
 - `14_forecasting_and_h1_leak.ipynb`: level forecasting, the h = 1 leak, forecast skill against the horizon.
 - `15_alignment_significance_intervals.ipynb`: the pulse alignment, same-shot and forecast results on the aligned data, quadratic ridge, bootstrap, intervals.
+- `16_attention_autoencoder_forecast.ipynb`: LSTM attention variants and autoencoder embeddings for forecasting.
 
 ## 7. Readings on the wrong shot in `results/datasets`, and the fix (`scripts/meter_alignment.py`, notebook 15)
 
@@ -146,3 +147,13 @@ Split-conformal quantiles normalised by the robust spread of the last 200 errors
 constant-width intervals: coverage closer to 90 % on average, better in the noisy half of the test shots, and much
 narrower at high charge for the same-shot model (seg 5: 8.2 → 4.7 % of the level at 93 % coverage; seg 1: 8.1 → 6.2 %).
 Seg 6's forecasts stay under-covered (78–85 %): its test region is noisier than its short training part.
+
+## 10. LSTM with attention and autoencoder embeddings (`scripts/attn_forecast.py`, notebook 16, plan `plan_attention_ae.md`)
+
+Nine variants (LSTM; + additive / general / multi-head / self-attention; + variable selection; per-shot autoencoder
+frozen or joint; sequence autoencoder), h = 1–50, aligned data, 3 seeds. All land within ~0.5 points of the GRU and
+the ridge. The attention readouts rank best (mean rank 4.3–4.7 of 11 vs GRU 6.1, ridge 6.2) and gain ~1 point over the
+GRU at h = 20 (significant on segs 1 and 6), but against the GRU they are significant in only 11 % of cases. The
+attention weights stay within 5 % of uniform: a learned window average, no preferred lag. Variable selection
+up-weights only the BCM-history inputs. Autoencoders do not help (per-shot AE 29 → 8 at 23 % reconstruction error;
+`ae_frozen` and `seq_ae` rank last). L = 64 is the best context; 2–3 s per fit.
