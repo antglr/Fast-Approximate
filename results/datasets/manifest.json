@@ -87,6 +87,15 @@
       "shots": 2000,
       "valid": 1780,
       "file": "segment_07.npz"
+    },
+    {
+      "segment": 8,
+      "run": "acquisition_2026-10-13_21-44-34",
+      "first_chunk": 15,
+      "last_chunk": 220,
+      "shots": 20600,
+      "valid": 18451,
+      "file": "segment_08.npz"
     }
   ]
 }

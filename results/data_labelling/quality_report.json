@@ -757,5 +757,105 @@
     "laser_scope/times": {
       "repeat": 13.5
     }
+  },
+  "acquisition_2026-10-13_21-44-34": {
+    "BCM_GUN": {
+      "stale": 0.1
+    },
+    "BTV0125": {
+      "stale": 0.28
+    },
+    "BTV0125/imagePositionSet1": {
+      "repeat": 40.92
+    },
+    "BTV0125/imagePositionSet2": {
+      "repeat": 40.92
+    },
+    "BTV0125/projDataSet1": {
+      "repeat": 0.06
+    },
+    "BTV0125/projDataSet1Original": {
+      "repeat": 0.06
+    },
+    "BTV0125/projDataSet2": {
+      "repeat": 0.06
+    },
+    "BTV0125/projDataSet2Original": {
+      "repeat": 0.06
+    },
+    "DHG0130": {
+      "stale": 2.58
+    },
+    "HUMID1": {
+      "stale": 4.12
+    },
+    "HUMID2": {
+      "stale": 5.57
+    },
+    "HUMID3": {
+      "stale": 6.71
+    },
+    "HUMID4": {
+      "stale": 7.28
+    },
+    "PGIA": {
+      "stale": 6.02,
+      "repeat": 6.04
+    },
+    "PGIP": {
+      "stale": 6.37,
+      "repeat": 6.39
+    },
+    "PGLA": {
+      "stale": 6.4
+    },
+    "PGLA/samples": {
+      "repeat": 6.44
+    },
+    "PGRA": {
+      "stale": 6.01,
+      "repeat": 6.05
+    },
+    "PKI15A": {
+      "stale": 6.67
+    },
+    "PKI15A/samples": {
+      "repeat": 6.69
+    },
+    "PKI15P": {
+      "stale": 7.12,
+      "repeat": 7.16
+    },
+    "PKR15A": {
+      "stale": 6.91,
+      "repeat": 6.97
+    },
+    "SNH_110": {
+      "stale": 1.34
+    },
+    "SNI_120": {
+      "stale": 1.84
+    },
+    "TEMP1": {
+      "stale": 0.3
+    },
+    "TEMP2": {
+      "stale": 0.84
+    },
+    "TEMP3": {
+      "stale": 1.6
+    },
+    "TEMP4": {
+      "stale": 2.59
+    },
+    "laser_scope": {
+      "stale": 4.29
+    },
+    "laser_scope/signal": {
+      "repeat": 9.02
+    },
+    "laser_scope/times": {
+      "repeat": 9.05
+    }
   }
 }
