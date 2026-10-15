@@ -1,0 +1,26 @@
+pulses between rows: {1.0: 63165, 2.0: 5, 3.0: 1, 4.0: 1, 5.0: 1, 6.0: 1}
+low charge, tuned on level alone: q = 3.2e-05 per pulse (level drifts 3.98 % per 50 pulses), c = 0.08, early-stopping MAE 13.4 pC
+high, repetitive, tuned on level alone: q = 1.0e-05 per pulse (level drifts 2.24 % per 50 pulses), c = 0.03, early-stopping MAE 147.9 pC
+high, non-repetitive, tuned on level alone: q = 3.2e-06 per pulse (level drifts 1.26 % per 50 pulses), c = 0.02, early-stopping MAE 145.3 pC
+low charge, tuned on level + ridge: q = 1.0e-05 per pulse (level drifts 2.24 % per 50 pulses), c = 0.08, early-stopping MAE 9.0 pC
+high, repetitive, tuned on level + ridge: q = 1.0e-05 per pulse (level drifts 2.24 % per 50 pulses), c = 0.08, early-stopping MAE 94.1 pC
+high, non-repetitive, tuned on level + ridge: q = 1.0e-05 per pulse (level drifts 2.24 % per 50 pulses), c = 0.08, early-stopping MAE 89.6 pC
+
+MAE pC, test regions
+seg                                                             0      1    2     3     4      5      6      7
+model                                                                                                         
+trailing 50, level only                                      18.2  143.3  6.9  12.4  11.7  145.5  122.2  428.1
+robust EMA, half-life 25, level only                         18.2  145.9  6.9  12.1  11.8  146.2  120.9  428.3
+robust EMA, half-life 25, inputs too, level only             18.2  145.9  6.9  12.1  11.8  146.2  120.9  428.3
+Kalman, tuned on level alone, level only                     18.4  137.2  6.6  12.0  11.5  140.5  120.5  423.3
+Kalman, tuned on level + ridge, level only                   18.2  141.2  6.9  12.1  12.2  143.2  120.7  425.9
+trailing 50, + ridge, current shot                           10.0   84.6  6.3   9.4   8.9   69.5   57.0  174.4
+robust EMA, half-life 25, + ridge, current shot              10.2   88.0  6.6   9.2   9.3   72.5   56.9  177.0
+robust EMA, half-life 25, inputs too, + ridge, current shot  10.1   84.3  6.6   9.1   8.8   70.1   57.0  178.6
+Kalman, tuned on level alone, + ridge, current shot          10.4   88.3  6.8   9.2   9.0   81.9   60.9  190.4
+Kalman, tuned on level + ridge, + ridge, current shot        10.2   85.6  6.6   9.2   9.5   72.1   57.3  179.3
+trailing 50, + ridge, + past BCM                             10.0   84.4  6.3   9.4   8.9   69.7   56.7  177.0
+robust EMA, half-life 25, + ridge, + past BCM                10.3   86.7  6.8   9.2   9.1   72.8   57.1  180.4
+robust EMA, half-life 25, inputs too, + ridge, + past BCM    10.1   84.1  6.7   9.1   8.8   69.6   56.8  181.5
+Kalman, tuned on level alone, + ridge, + past BCM            10.3   85.9  6.8   9.2   9.0   74.1   59.4  183.1
+Kalman, tuned on level + ridge, + ridge, + past BCM          10.3   85.4  6.8   9.2   9.2   71.1   57.1  178.8

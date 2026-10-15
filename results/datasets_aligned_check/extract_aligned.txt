@@ -1,0 +1,23 @@
+[Parallel(n_jobs=6)]: Using backend LokyBackend with 6 concurrent workers.
+DATA_ROOT = /home/xkc85723/Documents/artifact-hackathon-2026/challenges/optimisation/forecasting/data/h5
+8 segments, 634 chunks, features: ['lab_laser_power', 'PGLA_drop', 'SVD_s1', 'BTV_intensity', 'SVD_s5', 'SVD_s6', 'SVD_s4', 'PKI15A', 'BTV_tilt', 'BTV_mean_x']
+[Parallel(n_jobs=6)]: Done  29 tasks      | elapsed:  2.9min
+[Parallel(n_jobs=6)]: Done 150 tasks      | elapsed: 16.1min
+[Parallel(n_jobs=6)]: Done 353 tasks      | elapsed: 36.7min
+[Parallel(n_jobs=6)]: Done 634 out of 634 | elapsed: 59.7min finished
+laser_amp: shift in pulses {np.float64(-2.0): np.int64(1), np.float64(-1.0): np.int64(12403), np.float64(0.0): np.int64(50224), np.float64(1.0): np.int64(699)}
+lab_laser_power: shift in pulses {np.int64(-1): np.int64(42719), np.int64(0): np.int64(20608)}
+PGLA_drop: shift in pulses {np.float64(-1.0): np.int64(46892), np.float64(0.0): np.int64(14753), np.float64(1.0): np.int64(1648), np.float64(2.0): np.int64(34)}
+PKI15A: shift in pulses {np.float64(-1.0): np.int64(45588), np.float64(0.0): np.int64(15656), np.float64(1.0): np.int64(2034), np.float64(2.0): np.int64(49)}
+PKI15P: shift in pulses {np.float64(-1.0): np.int64(44532), np.float64(0.0): np.int64(16408), np.float64(1.0): np.int64(2340), np.float64(2.0): np.int64(47)}
+PKR15A: shift in pulses {np.float64(-1.0): np.int64(45034), np.float64(0.0): np.int64(16090), np.float64(1.0): np.int64(2145), np.float64(2.0): np.int64(58)}
+camera: shift in pulses {np.float64(-0.0): np.int64(53974), np.float64(1.0): np.int64(9322), np.float64(2.0): np.int64(31)}
+segment 0: acquisition_2026-10-07_21-43-26 chunks 11-71, 6027 shots (3477 valid) -> /home/xkc85723/Documents/Fast-Approximate/results/datasets_aligned/segment_00.npz
+segment 1: acquisition_2026-10-08_00-08-19 chunks 0-193, 19400 shots (5568 valid) -> /home/xkc85723/Documents/Fast-Approximate/results/datasets_aligned/segment_01.npz
+segment 2: acquisition_2026-10-08_15-42-27 chunks 0-1, 200 shots (110 valid) -> /home/xkc85723/Documents/Fast-Approximate/results/datasets_aligned/segment_02.npz
+segment 3: acquisition_2026-10-08_15-42-27 chunks 4-74, 7100 shots (4018 valid) -> /home/xkc85723/Documents/Fast-Approximate/results/datasets_aligned/segment_03.npz
+segment 4: acquisition_2026-10-08_15-42-27 chunks 76-120, 4500 shots (903 valid) -> /home/xkc85723/Documents/Fast-Approximate/results/datasets_aligned/segment_04.npz
+segment 5: acquisition_2026-10-08_21-11-47 chunks 0-199, 20000 shots (4975 valid) -> /home/xkc85723/Documents/Fast-Approximate/results/datasets_aligned/segment_05.npz
+segment 6: acquisition_2026-10-09_07-46-07 chunks 0-40, 4100 shots (2295 valid) -> /home/xkc85723/Documents/Fast-Approximate/results/datasets_aligned/segment_06.npz
+segment 7: acquisition_2026-10-09_07-46-07 chunks 87-106, 2000 shots (233 valid) -> /home/xkc85723/Documents/Fast-Approximate/results/datasets_aligned/segment_07.npz
+-> /home/xkc85723/Documents/Fast-Approximate/results/datasets_aligned/manifest.json

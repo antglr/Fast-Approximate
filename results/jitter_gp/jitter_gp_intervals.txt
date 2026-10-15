@@ -1,0 +1,54 @@
+GP on best residual, fixed noise, low charge: camera-missing extra std 10.29 % (154 early-stopping rows)
+GP on best residual, fixed noise, high, repetitive: camera-missing extra std 2.48 % (956 early-stopping rows)
+GP on best residual, fixed noise, high, non-repetitive: camera-missing extra std 2.26 % (1074 early-stopping rows)
+GP on best residual, learned noise, low charge: camera-missing extra std 13.55 % (154 early-stopping rows)
+GP on best residual, learned noise, high, repetitive: camera-missing extra std 2.51 % (956 early-stopping rows)
+GP on best residual, learned noise, high, non-repetitive: camera-missing extra std 2.26 % (1074 early-stopping rows)
+
+cover 90 %, test regions
+seg                                                                     0     1      2     3     4     5     6     7
+model                                                    shots                                                      
+GP on best residual, fixed noise                         all         88.9  80.6  100.0  85.9  91.3  87.9  93.7  73.0
+                                                         camera      89.1  88.9  100.0  85.8  92.7  94.0  93.7  79.6
+                                                         no camera   77.8  42.9    NaN  87.0  88.8  59.9   NaN  52.1
+GP on best residual, fixed noise + camera-missing term   all         89.2  87.9  100.0  86.1  94.6  94.1  93.7  82.5
+                                                         camera      89.1  88.9  100.0  85.8  92.7  94.0  93.7  79.6
+                                                         no camera  100.0  83.5    NaN  91.3  98.1  94.7   NaN  91.7
+GP on best residual, learned noise                       all         98.0  79.4   95.0  81.8  79.2  84.7  93.7  74.0
+                                                         camera      98.1  87.5   95.0  81.5  80.1  91.2  93.7  79.6
+                                                         no camera   88.9  42.9    NaN  84.8  77.6  55.2   NaN  56.2
+GP on best residual, learned noise + camera-missing term all         98.2  86.8   95.0  82.2  86.4  91.8  93.7  82.5
+                                                         camera      98.1  87.5   95.0  81.5  80.1  91.2  93.7  79.6
+                                                         no camera  100.0  83.5    NaN  91.3  97.5  94.7   NaN  91.7
+
+cover 99 %, test regions
+seg                                                                     0     1      2      3      4     5     6     7
+model                                                    shots                                                        
+GP on best residual, fixed noise                         all         97.7  90.8  100.0   95.0   98.4  95.5  99.3  86.5
+                                                         camera      97.6  97.5  100.0   95.3   98.6  99.4  99.3  91.4
+                                                         no camera  100.0  60.5    NaN   91.3   98.1  78.0   NaN  70.8
+GP on best residual, fixed noise + camera-missing term   all         97.7  96.9  100.0   95.6   99.1  99.3  99.3  93.0
+                                                         camera      97.6  97.5  100.0   95.3   98.6  99.4  99.3  91.4
+                                                         no camera  100.0  94.0    NaN  100.0  100.0  99.2   NaN  97.9
+GP on best residual, learned noise                       all         99.5  90.6  100.0   91.9   94.6  94.5  99.3  86.0
+                                                         camera      99.5  97.4  100.0   92.1   94.8  99.0  99.3  90.8
+                                                         no camera  100.0  59.7    NaN   89.1   94.4  74.1   NaN  70.8
+GP on best residual, learned noise + camera-missing term all         99.5  96.8  100.0   92.6   96.7  99.0  99.3  92.5
+                                                         camera      99.5  97.4  100.0   92.1   94.8  99.0  99.3  90.8
+                                                         no camera  100.0  94.0    NaN  100.0  100.0  99.2   NaN  97.9
+
+90 % half-width pC, test regions
+seg                                                                    0      1     2     3     4      5     6      7
+model                                                    shots                                                       
+GP on best residual, fixed noise                         all        18.7   65.6  18.0  18.0  17.9   73.9  76.5  135.6
+                                                         camera     18.7   65.9  18.0  18.0  18.0   73.9  76.5  135.5
+                                                         no camera  19.2   64.5   NaN  18.0  17.9   74.1   NaN  135.7
+GP on best residual, fixed noise + camera-missing term   all        19.1   87.8  18.0  18.7  20.8  106.0  76.5  199.7
+                                                         camera     18.7   65.9  18.0  18.0  18.0   73.9  76.5  135.5
+                                                         no camera  45.1  186.7   NaN  28.6  25.9  252.2   NaN  403.1
+GP on best residual, learned noise                       all        29.6   64.3  17.0  15.8  13.2   65.7  76.3  135.8
+                                                         camera     29.6   64.4  17.0  15.8  13.1   65.6  76.3  135.1
+                                                         no camera  29.0   63.7   NaN  15.8  13.3   65.9   NaN  138.1
+GP on best residual, learned noise + camera-missing term all        30.1   86.6  17.0  16.9  18.4   99.3  76.3  199.7
+                                                         camera     29.6   64.4  17.0  15.8  13.1   65.6  76.3  135.1
+                                                         no camera  61.0  186.6   NaN  33.2  27.8  252.5   NaN  404.3

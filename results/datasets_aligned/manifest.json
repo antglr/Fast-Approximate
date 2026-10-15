@@ -1,0 +1,92 @@
+{
+  "features": [
+    "lab_laser_power",
+    "PGLA_drop",
+    "SVD_s1",
+    "BTV_intensity",
+    "SVD_s5",
+    "SVD_s6",
+    "SVD_s4",
+    "PKI15A",
+    "BTV_tilt",
+    "BTV_mean_x"
+  ],
+  "target": "BCM_GUN",
+  "cuts_file": "/home/xkc85723/Documents/Fast-Approximate/config/CLEAN_CUTS.toml",
+  "data_root": "/home/xkc85723/Documents/artifact-hackathon-2026/challenges/optimisation/forecasting/data/h5",
+  "pca": {},
+  "segments": [
+    {
+      "segment": 0,
+      "run": "acquisition_2026-10-07_21-43-26",
+      "first_chunk": 11,
+      "last_chunk": 71,
+      "shots": 6027,
+      "valid": 3477,
+      "file": "segment_00.npz"
+    },
+    {
+      "segment": 1,
+      "run": "acquisition_2026-10-08_00-08-19",
+      "first_chunk": 0,
+      "last_chunk": 193,
+      "shots": 19400,
+      "valid": 5568,
+      "file": "segment_01.npz"
+    },
+    {
+      "segment": 2,
+      "run": "acquisition_2026-10-08_15-42-27",
+      "first_chunk": 0,
+      "last_chunk": 1,
+      "shots": 200,
+      "valid": 110,
+      "file": "segment_02.npz"
+    },
+    {
+      "segment": 3,
+      "run": "acquisition_2026-10-08_15-42-27",
+      "first_chunk": 4,
+      "last_chunk": 74,
+      "shots": 7100,
+      "valid": 4018,
+      "file": "segment_03.npz"
+    },
+    {
+      "segment": 4,
+      "run": "acquisition_2026-10-08_15-42-27",
+      "first_chunk": 76,
+      "last_chunk": 120,
+      "shots": 4500,
+      "valid": 903,
+      "file": "segment_04.npz"
+    },
+    {
+      "segment": 5,
+      "run": "acquisition_2026-10-08_21-11-47",
+      "first_chunk": 0,
+      "last_chunk": 199,
+      "shots": 20000,
+      "valid": 4975,
+      "file": "segment_05.npz"
+    },
+    {
+      "segment": 6,
+      "run": "acquisition_2026-10-09_07-46-07",
+      "first_chunk": 0,
+      "last_chunk": 40,
+      "shots": 4100,
+      "valid": 2295,
+      "file": "segment_06.npz"
+    },
+    {
+      "segment": 7,
+      "run": "acquisition_2026-10-09_07-46-07",
+      "first_chunk": 87,
+      "last_chunk": 106,
+      "shots": 2000,
+      "valid": 233,
+      "file": "segment_07.npz"
+    }
+  ]
+}

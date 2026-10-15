@@ -1,0 +1,56 @@
+low charge, GP on jitter, fixed noise: 202 s
+low charge, GP on jitter, learned noise: 344 s, learned noise std 7.33 %
+low charge, GP on best residual, fixed noise: 323 s
+low charge, GP on best residual, learned noise: 378 s, learned noise std 5.56 %
+high, repetitive, GP on jitter, fixed noise: 276 s
+high, repetitive, GP on jitter, learned noise: 213 s, learned noise std 1.04 %
+high, repetitive, GP on best residual, fixed noise: 175 s
+high, repetitive, GP on best residual, learned noise: 299 s, learned noise std 0.51 %
+high, non-repetitive, GP on jitter, fixed noise: 371 s
+high, non-repetitive, GP on jitter, learned noise: 346 s, learned noise std 1.16 %
+high, non-repetitive, GP on best residual, fixed noise: 278 s
+high, non-repetitive, GP on best residual, learned noise: 241 s, learned noise std 0.57 %
+
+jitter explained %, test regions
+seg                                         0     1     2     3     4     5     6     7
+model                                                                                  
+ridge, current shot                      68.1  63.3  13.0  28.3  38.5  74.1  79.0  89.0
+ridge, + past BCM + GRU, L=64, past BCM  73.1  84.5  24.5  29.2  48.8  89.0  93.1  90.9
+GP on jitter, fixed noise                70.6  78.2  24.8  28.7  42.4  85.9  85.6  49.9
+GP on jitter, learned noise              68.3  82.2   6.5  28.2  39.7  87.6  88.7  50.0
+GP on best residual, fixed noise         72.5  84.5  18.4  29.1  48.8  89.0  92.9  91.1
+GP on best residual, learned noise       71.3  84.4  12.0  28.5  45.5  89.0  92.9  91.1
+
+MAE pC, test regions
+seg                                         0     1    2    3    4     5     6      7
+model                                                                                
+ridge, current shot                      10.0  84.6  6.3  9.4  8.9  69.5  57.0  174.4
+ridge, + past BCM + GRU, L=64, past BCM   9.2  45.7  5.6  9.1  8.1  40.8  31.0  147.0
+GP on jitter, fixed noise                 9.5  56.9  5.6  9.3  8.5  46.9  45.5  233.8
+GP on jitter, learned noise               9.9  50.3  6.6  9.4  8.8  43.8  37.8  218.8
+GP on best residual, fixed noise          9.3  45.8  5.9  9.1  8.1  40.6  31.4  146.3
+GP on best residual, learned noise        9.5  45.8  5.9  9.1  8.3  40.6  31.5  145.8
+
+cover 90 %, test regions
+seg                                    0     1      2     3     4     5     6     7
+model                                                                              
+GP on jitter, fixed noise           88.4  83.1  100.0  85.6  90.4  90.8  95.1  81.5
+GP on jitter, learned noise         99.0  88.4   95.0  86.3  84.8  93.6  98.3  90.5
+GP on best residual, fixed noise    88.9  80.6  100.0  85.9  91.3  87.9  93.7  73.0
+GP on best residual, learned noise  98.0  79.4   95.0  81.8  79.2  84.7  93.7  74.0
+
+cover 99 %, test regions
+seg                                    0     1      2     3     4     5     6     7
+model                                                                              
+GP on jitter, fixed noise           97.5  93.9  100.0  94.8  98.2  96.1  99.8  92.5
+GP on jitter, learned noise         99.8  95.1  100.0  95.5  96.4  97.3  99.5  94.5
+GP on best residual, fixed noise    97.7  90.8  100.0  95.0  98.4  95.5  99.3  86.5
+GP on best residual, learned noise  99.5  90.6  100.0  91.9  94.6  94.5  99.3  86.0
+
+90 % half-width pC, test regions
+seg                                    0     1     2     3     4      5      6      7
+model                                                                                
+GP on jitter, fixed noise           19.6  90.8  18.3  18.3  18.3   95.7  113.4  207.8
+GP on jitter, learned noise         35.2  99.8  20.3  19.0  16.0  107.1  114.3  219.2
+GP on best residual, fixed noise    18.7  65.6  18.0  18.0  17.9   73.9   76.5  135.6
+GP on best residual, learned noise  29.6  64.3  17.0  15.8  13.2   65.7   76.3  135.8
