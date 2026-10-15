@@ -1,0 +1,17 @@
+[
+ {
+  "regime": "high_nonrep",
+  "filter": "holt",
+  "param": "a=0.05,b=0.01"
+ },
+ {
+  "regime": "high_rep",
+  "filter": "robust_ema",
+  "param": "hl=10"
+ },
+ {
+  "regime": "low",
+  "filter": "robust_ema",
+  "param": "hl=100"
+ }
+]
