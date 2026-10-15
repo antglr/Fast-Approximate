@@ -141,7 +141,7 @@ def fmt_time(s):
     return f"{h:d}:{m:02d}:{s:02d}"
 
 
-def train(ds, epochs=100, batch=10, lr=2e-3, aux_weight=1.0):
+def train(ds, epochs=150, batch=15, lr=2e-3, aux_weight=1.0):
     """Trains the autoencoder and prints one line per epoch.
     No translation/rotation augmentation: it would move the spot and corrupt the latent."""
     supervised = ds.labels is not None
@@ -325,7 +325,7 @@ if __name__ == "__main__":
     ds = ImageSeries(data, crop=CROP)
     model = train(ds)
     ds_test = ImageSeries(test_data, crop=CROP)
-
+    z = extract_latents(model, ds_test)
     diagnose(model, ds_test)
 
     evaluate_reconstruction(model, ds_test)           # decoding metrics
