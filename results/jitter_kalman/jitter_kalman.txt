@@ -24,3 +24,4 @@ robust EMA, half-life 25, + ridge, + past BCM                10.3   86.7  6.8   
 robust EMA, half-life 25, inputs too, + ridge, + past BCM    10.1   84.1  6.7   9.1   8.8   69.6   56.8  181.5
 Kalman, tuned on level alone, + ridge, + past BCM            10.3   85.9  6.8   9.2   9.0   74.1   59.4  183.1
 Kalman, tuned on level + ridge, + ridge, + past BCM          10.3   85.4  6.8   9.2   9.2   71.1   57.1  178.8
+-> /home/xkc85723/Documents/Fast-Approximate/results/jitter_kalman/jitter_kalman.png
