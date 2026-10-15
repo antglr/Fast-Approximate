@@ -3,6 +3,7 @@
 #   jitter:   log Q - trailing 50-shot BCM level, from the fast parts of the readings, one model per regime
 # python3 -I scripts/regime_bench.py results/datasets results/regime_bench [--quick]
 import argparse
+import json
 import sys
 import time
 from pathlib import Path
@@ -181,11 +182,19 @@ def main():
     ap.add_argument("out")
     ap.add_argument("--quick", action="store_true")
     ap.add_argument("--models", default=",".join(MODELS))
+    ap.add_argument("--robust", type=float, default=0, help="k: MAD outlier handling of inputs and training targets")
+    ap.add_argument("--filters", help="choice.json of decompose.py: level filter per regime")
     a = ap.parse_args()
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     print("device", DEVICE, flush=True)
-    segs, _ = load(a.datasets)
+    filters = None
+    if a.filters:
+        from decompose import GRID, causal
+        fns = {(n, p): fn for n, fn, p in GRID}
+        filters = {c["regime"]: causal(fns[c["filter"], c["param"]]) for c in json.loads(Path(a.filters).read_text())}
+        print("filters", Path(a.filters).read_text(), flush=True)
+    segs, _ = load(a.datasets, fast_filter=filters, robust=a.robust or None)
     models = a.models.split(",")
     rows = []
     for framing, pool in [("absolute", "segment"), ("jitter", "segment"), ("jitter", "regime")]:

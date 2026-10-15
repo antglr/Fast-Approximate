@@ -165,10 +165,10 @@ def acf1(a):
     return float(np.sum(a[1:] * a[:-1]) / np.sum(a * a))
 
 
-def evaluate(datasets, names):
+def evaluate(datasets, names, robust=None):
     rows = []
     for name, fn, par in GRID:
-        segs, _ = load(datasets, fast_filter=causal(fn))
+        segs, _ = load(datasets, fast_filter=causal(fn), robust=robust)
         for regime, ss in REGIMES.items():
             G = [segs[s] for s in ss if s in segs]
             X = np.concatenate([np.c_[g["Xfast"], g["missing"]] for g in G])
@@ -200,14 +200,15 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("datasets")
     ap.add_argument("out")
+    ap.add_argument("--robust", type=float, default=0, help="k: MAD outlier handling (regimes.load)")
     a = ap.parse_args()
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     leak_test()
-    segs, names = load(a.datasets)
+    segs, names = load(a.datasets, robust=a.robust or None)
     bands = spectra(segs, names, out)
     bands.to_csv(out / "bands.csv", index=False)
-    df = evaluate(a.datasets, names)
+    df = evaluate(a.datasets, names, a.robust or None)
     df.to_csv(out / "filters.csv", index=False)
     per = df.groupby(["regime", "filter", "param"]).mean(numeric_only=True).drop(columns="segment").reset_index()
     best_param = per.loc[per.groupby(["regime", "filter"])["val_ridge_mae_pct"].idxmin()]
