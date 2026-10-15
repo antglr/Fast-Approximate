@@ -190,6 +190,7 @@ def train(ds, epochs=100, batch=10, lr=2e-3, aux_weight=1.0):
 
 
 # ------------------------------------------------------------------ Latent space tests (decoding)
+@torch.no_grad()
 def spot_stats(img):
     """img: (H, W) tensor. Returns (cx, cy, sigma) of the spot in pixels.
     The image is thresholded at half its maximum so background noise does not bias the result."""
@@ -202,6 +203,7 @@ def spot_stats(img):
     var = (img * ((xs - cx) ** 2 + (ys - cy) ** 2)).sum() / tot / 2
     return cx.item(), cy.item(), var.sqrt().item()
 
+@torch.no_grad()
 def beam_size(img, smooth=5):
     """img: (H, W) tensor. Robust beam size: equivalent Gaussian sigma (pixels) from the area
     above half-maximum, after removing the background and lightly smoothing (kills hot pixels).
@@ -240,7 +242,7 @@ def evaluate_reconstruction(model, ds, batch=4):
     print(f"Size error     mean {100 * np.mean(size_err):.1f} % | max {100 * np.max(size_err):.1f} %")
     return dict(mse=mses, pos_err=pos_err, size_err=size_err)
 
-
+@torch.no_grad()
 def plot_reconstructions(model, ds, indices=(0, -1), path="reconstructions.png"):
     """Saves a figure: original | reconstruction | absolute difference, for the chosen frames."""
     import matplotlib
@@ -259,9 +261,9 @@ def plot_reconstructions(model, ds, indices=(0, -1), path="reconstructions.png")
             axes[r, c].axis("off")
     fig.tight_layout()
     plt.show()
-    #fig.savefig(path, dpi=80)
-    #plt.close(fig)
-    #print("saved", path)
+    fig.savefig(path, dpi=80)
+    plt.close(fig)
+    print("saved", path)
 
 
 @torch.no_grad()
@@ -283,9 +285,9 @@ def plot_interpolation(model, ds, i=0, j=50, steps=6, path="interpolation.png"):
         axes[k].axis("off")
     fig.tight_layout()
     plt.show()
-    #fig.savefig(path, dpi=80)
-    #plt.close(fig)
-    #print("saved", path)
+    fig.savefig(path, dpi=80)
+    plt.close(fig)
+    print("saved", path)
 
 
 @torch.no_grad()
@@ -313,42 +315,6 @@ def extract_latents(model, ds, batch=4):
 
 
 
-
-
-# ------------------------------------------------------------------ LSTM on the latent sequence
-class LatentLSTM(nn.Module):
-    def __init__(self, latent=LATENT, hidden=64):
-        super().__init__()
-        self.lstm = nn.LSTM(latent, hidden, batch_first=True)
-        self.out = nn.Linear(hidden, latent)  # predicts the next latent vector
-
-    def forward(self, z_seq):  # (B, T, latent)
-        h, _ = self.lstm(z_seq)
-        return self.out(h[:, -1])
-
-
-def make_windows(z, T=10):
-    """z: (N, latent) -> inputs (N-T, T, latent), targets (N-T, latent)."""
-    X = torch.stack([z[i:i + T] for i in range(len(z) - T)])
-    y = z[T:]
-    return X, y
-
-
-def train_lstm(z, T=10, epochs=300):
-    mu, sd = z.mean(0), z.std(0) + 1e-6  # normalize the latents
-    zn = (z - mu) / sd
-    X, y = make_windows(zn, T)
-    model = LatentLSTM(z.shape[1]).to(DEVICE)
-    opt = torch.optim.Adam(model.parameters(), lr=1e-3)
-    X, y = X.to(DEVICE), y.to(DEVICE)
-    for ep in range(epochs):
-        loss = F.mse_loss(model(X), y)
-        opt.zero_grad()
-        loss.backward()
-        opt.step()
-        if ep % 50 == 0:
-            print(f"LSTM epoch {ep}  loss {loss.item():.5f}")
-    return model, (mu, sd)
 
 
 if __name__ == "__main__":
