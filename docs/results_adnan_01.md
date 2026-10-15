@@ -83,3 +83,25 @@ each forecast conditioned only on the good shots up to t − h (`results/level_f
 - **Negative result:** adding the ~190-shot cycle seen in the spectra (seg 5: 2048 + 188 shots, seg 1: 200) does not
   help at h ≤ 10 and hurts at h = 50 (seg 5 +3.9 %, seg 1 +1.9 %; `results/level_forecast_periodic190/`). The cycle is
   in the spectrum but its phase does not hold long enough to extrapolate.
+
+## 6. Forecasting with everything known at t − h (`scripts/feature_forecast.py`, notebook 14)
+
+**Leak found in `results/datasets`:** `lab_laser_power` (and `PGLA_drop`) on row t − 1 correlates with shot t's charge
+jitter as much as or more than row t (seg 7: 0.56 against 0.34). On part of the rows the column holds the *next*
+shot's reading; `extract_features.py` does not apply the `meter_shift` rule of `pulses.py` per shot. With them on
+their row, the next-shot gain from the instruments was 17–20 % on segs 5 and 7 and collapsed to 4 % at h = 2. The
+forecaster now uses those two columns one row later (`--no-late-fix` reproduces the leak,
+`results/feature_forecast_leak/`). The same-shot models on the team datasets are affected too: the lab column mixes
+shots t and t + 1. The fix belongs in `extract_features.py`.
+
+After the fix (`results/feature_forecast/`), every model beats the 9-shot mean at nearly every horizon by 1–12 %.
+The instruments add 0.5–2 points over the BCM history at short horizons, and the gain does not grow with h: the
+jitter is laser-driven and the next pulse's laser energy is not predictable. Forecasting tracks the level better;
+the instruments pay in the same-shot virtual diagnostic.
+
+## Notebooks (`notebooks/adnan/`, executed on Dalia)
+
+- `11_robust_preparation.ipynb`: the outliers, the correlations before / after, all nine model families before / after, R² vs MAE.
+- `12_trend_noise_decomposition.ipynb`: Lomb–Scargle spectra per regime, the gap-filling trap, the filter comparison.
+- `13_models_gp_ensembles_floor.ipynb`: GP, ensembles, stacking weights, gap to the BCM noise floor, intervals.
+- `14_forecasting_and_h1_leak.ipynb`: level forecasting, the h = 1 leak, forecast skill against the horizon.
