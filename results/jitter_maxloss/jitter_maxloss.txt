@@ -1,0 +1,97 @@
+low charge, p=1: training max |error| 106.31 %
+low charge, p=2: training max |error| 105.18 %
+low charge, p=4: training max |error| 53.25 %
+low charge, p=8: training max |error| 49.20 %
+low charge, p=inf: training max |error| 44.57 %
+high, repetitive, p=1: training max |error| 129.17 %
+high, repetitive, p=2: training max |error| 40.67 %
+high, repetitive, p=4: training max |error| 15.23 %
+high, repetitive, p=8: training max |error| 12.15 %
+high, repetitive, p=inf: training max |error| 11.09 %
+high, non-repetitive, p=1: training max |error| 185.33 %
+high, non-repetitive, p=2: training max |error| 30.89 %
+high, non-repetitive, p=4: training max |error| 14.87 %
+high, non-repetitive, p=8: training max |error| 12.07 %
+high, non-repetitive, p=inf: training max |error| 11.02 %
+
+BCM-lost test shots per segment: {0: 0, 1: 0, 2: 0, 3: 2, 4: 1, 5: 0, 6: 0, 7: 0}
+
+|error| pC, MAE, test regions, all shots
+seg                                         0      1    2     3     4      5      6      7
+model                                                                                     
+linear, p=1                               9.0   62.0  5.7   9.2   8.7   51.5   40.4  156.3
+linear, p=2                               9.5   81.9  5.8   9.3   8.7   69.5   50.0  158.0
+linear, p=4                              10.8   96.6  6.0   9.7   9.1   77.8   62.7  187.5
+linear, p=8                              12.7  105.1  6.6  10.6  10.1   89.8   79.4  225.7
+linear, p=inf                            17.4  111.2  7.7  12.5  11.8  133.3  134.6  238.6
+ridge, + past BCM + GRU, L=64, past BCM   9.2   45.7  5.6   9.1   8.1   40.8   31.0  147.0
+
+|error| pC, p99, test regions, all shots
+seg                                         0      1     2     3     4      5      6       7
+model                                                                                       
+linear, p=1                              36.0  302.0  17.2  42.3  30.4  357.0  125.8   681.5
+linear, p=2                              38.4  316.4  17.0  44.8  30.2  306.2  169.8  2107.0
+linear, p=4                              46.4  375.4  14.9  44.0  31.1  321.8  186.5  1596.7
+linear, p=8                              52.5  398.0  14.3  45.9  32.8  342.3  246.0  2134.9
+linear, p=inf                            69.7  413.2  15.0  47.8  39.4  468.7  397.6   851.9
+ridge, + past BCM + GRU, L=64, past BCM  35.7  295.7  14.7  41.6  27.5  233.5  118.6  1811.8
+
+|error| pC, p99.9, test regions, all shots
+seg                                         0      1     2     3     4      5      6       7
+model                                                                                       
+linear, p=1                              46.3  591.4  17.7  72.0  42.7  527.3  221.7  4436.5
+linear, p=2                              50.1  490.3  17.5  70.8  41.6  495.2  287.9  2362.0
+linear, p=4                              56.0  513.7  14.9  68.3  40.3  526.5  254.3  3715.9
+linear, p=8                              65.4  516.3  14.4  66.4  39.6  552.1  329.3  4414.1
+linear, p=inf                            91.5  521.5  15.4  69.5  45.5  645.7  483.6  4502.7
+ridge, + past BCM + GRU, L=64, past BCM  49.1  442.3  15.0  70.6  38.2  423.2  178.6  2816.1
+
+|error| pC, max, test regions, all shots
+seg                                         0       1     2     3     4      5      6       7
+model                                                                                        
+linear, p=1                              50.3  1066.2  17.7  77.6  43.3  671.4  260.0  5357.0
+linear, p=2                              50.9   494.6  17.6  76.3  43.8  618.7  345.4  2422.8
+linear, p=4                              56.7   526.8  15.0  74.2  44.4  640.0  268.3  3783.0
+linear, p=8                              65.9   550.7  14.4  72.3  43.1  615.4  353.0  4493.1
+linear, p=inf                            93.8   546.2  15.5  70.7  46.5  689.2  501.3  4591.8
+ridge, + past BCM + GRU, L=64, past BCM  50.1   477.3  15.0  74.3  40.0  777.0  207.5  2955.3
+
+|error| pC, MAE, test regions, no BCM-lost shots
+seg                                         0      1    2     3     4      5      6      7
+model                                                                                     
+linear, p=1                               9.0   62.0  5.7   9.1   8.6   51.5   40.4  156.3
+linear, p=2                               9.5   81.9  5.8   9.1   8.7   69.5   50.0  158.0
+linear, p=4                              10.8   96.6  6.0   9.5   9.0   77.8   62.7  187.5
+linear, p=8                              12.7  105.1  6.6  10.5  10.0   89.8   79.4  225.7
+linear, p=inf                            17.4  111.2  7.7  12.4  11.8  133.3  134.6  238.6
+ridge, + past BCM + GRU, L=64, past BCM   9.2   45.7  5.6   9.0   8.0   40.8   31.0  147.0
+
+|error| pC, p99, test regions, no BCM-lost shots
+seg                                         0      1     2     3     4      5      6       7
+model                                                                                       
+linear, p=1                              36.0  302.0  17.2  40.8  29.4  357.0  125.8   681.5
+linear, p=2                              38.4  316.4  17.0  40.5  29.7  306.2  169.8  2107.0
+linear, p=4                              46.4  375.4  14.9  39.9  30.7  321.8  186.5  1596.7
+linear, p=8                              52.5  398.0  14.3  41.2  32.6  342.3  246.0  2134.9
+linear, p=inf                            69.7  413.2  15.0  46.7  37.8  468.7  397.6   851.9
+ridge, + past BCM + GRU, L=64, past BCM  35.7  295.7  14.7  39.9  26.3  233.5  118.6  1811.8
+
+|error| pC, p99.9, test regions, no BCM-lost shots
+seg                                         0      1     2     3     4      5      6       7
+model                                                                                       
+linear, p=1                              46.3  591.4  17.7  51.9  40.0  527.3  221.7  4436.5
+linear, p=2                              50.1  490.3  17.5  51.5  37.5  495.2  287.9  2362.0
+linear, p=4                              56.0  513.7  14.9  51.6  34.9  526.5  254.3  3715.9
+linear, p=8                              65.4  516.3  14.4  52.8  35.2  552.1  329.3  4414.1
+linear, p=inf                            91.5  521.5  15.4  63.2  45.5  645.7  483.6  4502.7
+ridge, + past BCM + GRU, L=64, past BCM  49.1  442.3  15.0  52.2  34.3  423.2  178.6  2816.1
+
+|error| pC, max, test regions, no BCM-lost shots
+seg                                         0       1     2     3     4      5      6       7
+model                                                                                        
+linear, p=1                              50.3  1066.2  17.7  53.8  42.0  671.4  260.0  5357.0
+linear, p=2                              50.9   494.6  17.6  53.2  38.7  618.7  345.4  2422.8
+linear, p=4                              56.7   526.8  15.0  53.7  35.2  640.0  268.3  3783.0
+linear, p=8                              65.9   550.7  14.4  54.1  35.3  615.4  353.0  4493.1
+linear, p=inf                            93.8   546.2  15.5  63.4  46.5  689.2  501.3  4591.8
+ridge, + past BCM + GRU, L=64, past BCM  50.1   477.3  15.0  53.3  35.9  777.0  207.5  2955.3

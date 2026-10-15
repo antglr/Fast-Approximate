@@ -1,0 +1,31 @@
+-> /home/xkc85723/Documents/Fast-Approximate/results/jitter_spectrum/jitter_spectrum.png
+variance (%² of the trailing level) per band of period; the white floor splits as 2 sigma² x bandwidth
+ seg          series  2-4 shots %²  4-10 shots %²  10-50 shots %²  50-inf shots %²
+   0          target        39.812         31.224          18.198            2.484
+   0  ridge residual        14.382          9.716           4.180            0.973
+   0   best residual        11.852          8.194           3.343            1.052
+   0 BCM noise floor         9.763          5.858           3.124            0.781
+   1          target         5.472          3.825           3.123            1.075
+   1  ridge residual         2.455          1.523           1.138            0.199
+   1   best residual         0.961          0.741           0.515            0.077
+   1 BCM noise floor         0.284          0.170           0.091            0.023
+   3          target        62.829         46.223          27.251           14.526
+   3  ridge residual        44.753         27.165          18.796           13.185
+   3   best residual        44.427         27.098          17.752           12.858
+   3 BCM noise floor        33.354         20.013          10.673            2.668
+   4          target        85.998         45.744          26.915            9.856
+   4  ridge residual        51.616         29.112          20.691            4.638
+   4   best residual        39.845         26.919          19.812            3.104
+   4 BCM noise floor        45.839         27.504          14.669            3.667
+   5          target         4.143          2.784           1.806            1.083
+   5  ridge residual         1.287          0.754           0.438            0.124
+   5   best residual         0.535          0.328           0.201            0.057
+   5 BCM noise floor         0.276          0.165           0.088            0.022
+   6          target         2.766          1.846           2.141            0.604
+   6  ridge residual         0.735          0.534           0.337            0.060
+   6   best residual         0.239          0.167           0.094            0.006
+   6 BCM noise floor         0.277          0.166           0.089            0.022
+   7          target         4.825          3.452           2.839            1.808
+   7  ridge residual         1.166          0.690           0.535            0.189
+   7   best residual         0.680          0.542           0.337            0.074
+   7 BCM noise floor         0.265          0.159           0.085            0.021

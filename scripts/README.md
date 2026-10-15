@@ -38,6 +38,10 @@ PY=python3 scripts/run_pipeline.sh 2026-10-09_07-46-07 data/h5 data/tables resul
 | `jitter_input_screen.py` | Screens laser-pulse shape and RF flat-top readings as extra jitter inputs (below): they add nothing |
 | `jitter_online.py` | Shot-by-shot refit of a linear correction on top of the jitter models, using the BCM up to the previous shot (below) |
 | `jitter_noise_plot.py` | Distribution of the BCM noise vs the jitter models' residuals; is the noise Gaussian? (below) |
+| `bcm_noise_model.py` | Tighter noise estimate, noise vs charge law, model-free skewness / kurtosis of the noise, noise stability (below) |
+| `jitter_gp.py` | Gaussian process for the jitter with the measured BCM noise as a fixed per-shot noise term (below) |
+| `jitter_maxloss.py` | Linear jitter models trained on mean |error|^p, p = 1 … ∞ (minimax): does it lower the largest error? (below) |
+| `jitter_spectrum.py` | Power spectra of the jitter and the model residuals against the noise floor: decomposition by timescale (below) |
 
 Run the scripts with `python -I`. The tables match the ones made from the pickles, except that the camera
 columns are left out.
@@ -811,4 +815,114 @@ test regions (log-y histograms in the plot):
 given a tight prior) from the hat, σ_n(Q)² ≈ (11.5 pC)² + (0.0065 Q)², rather than learned: a learned noise term absorbs
 real jitter. No correlated noise term is needed. For the ~1 % tail shots, use a Student-t likelihood or clip the shots
 beyond 5 MAD before fitting.
+
+## Squeezing the noise estimate (`bcm_noise_model.py`, `results/noise_floor/bcm_noise_model.txt`)
+
+```bash
+python3 -I scripts/bcm_noise_model.py data/tables 2026-10-07_21-43-26 2026-10-08_00-08-19 2026-10-08_15-42-27 \
+    2026-10-08_21-11-47 2026-10-09_07-46-07
+```
+
+Training parts only, so a model may use the results. Four additions to the three-cornered hat:
+
+1. **A stronger third reading.** The hat works for any third reading X whose noise is independent of the BCM's and the
+   camera's, whatever part of the charge X sees. So X can be a combination: lab, clex, scope and step, fitted to the
+   BCM jitter. The fit is cross-fitted (weights from the other half of the segment), so it cannot pick up this half's
+   BCM noise.
+   - At low charge, r(BCM, X) rises from 0.16–0.32 (lab) to 0.31–0.68, and the intervals narrow by up to 2×. For
+     example, seg 0 goes from 5.12 % [4.89, 5.32] to 4.96 % [4.81, 5.08].
+   - At high charge, lab alone is already as good.
+2. **Noise against charge:** σ_n(Q)² = a² + (b Q)², fitted across segments.
+   - **a = 10.7 pC [10.5, 11.0] and b = 0.72 % [0.66, 0.78]** (95 % bootstrap).
+   - The fit matches every segment within 10 % except seg 7: 99 pC against 74 pC, from only 1381 shots with an interval
+     of 68–119 pC.
+   - Seg 1's training part gives 39 pC. The 57 pC in the table above came from its test region.
+3. **Is the noise Gaussian? (no model involved)** The same algebra one order up gives the noise's own 3rd and 4th
+   cumulants:
+
+       k3(n_B) = k3(B) − cum(BBC)·cum(BBX)/cum(BCX),   k4(n_B) = k4(B) − cum(BBBC)·cum(BBBX)/cum(BBCX)
+
+   This only works if the true charge jitter is itself non-Gaussian, and it is: its excess kurtosis is 0.6–1.5.
+   A synthetic check (Gaussian noise on an exponential charge) recovers zero.
+
+   | X = comb, spikes removed | seg 0 | seg 3 | seg 4 | high charge (1, 5, 6, 7) |
+   |---|---|---|---|---|
+   | noise skewness | −0.33 [−0.63, 0.10] | −0.62 [−0.78, −0.46] | −0.6 [−2.3, 1.8] | not identified |
+   | noise excess kurtosis | 1.5 [1.1, 1.9] | 2.9 [2.3, 3.4] | 3.3 [−5, 9] | not identified (intervals ±50 or more) |
+
+   - **At low charge, the noise has heavier tails than a Gaussian** (excess kurtosis 1.5–3), and seg 3 is slightly
+     skewed towards low readings.
+   - Taking the log of additive Gaussian noise of 5–9 % would give a skew of −0.15 to −0.28 and an excess kurtosis of
+     0.06–0.19. About half of seg 3's skew (−0.62) is the log; the kurtosis is far too large to come from it.
+   - A Student-t with ν = 4 + 6 / kurtosis ≈ 6–8 has these tails.
+   - At high charge the noise is only ~0.5 % of the jitter variance, so its shape cannot be measured. The residual
+     histograms (above) suggest heavy tails there too.
+4. **Is the noise steady?** Hat per 1000-shot block, in pC:
+   - **At low charge it is constant:** seg 3 stays at 10.3–10.9 pC and seg 0 at 9.6–13.4 pC. So the excess kurtosis
+     is the noise's own shape, not a drifting width.
+   - At high charge the blocks scatter (seg 1: 20–81 pC; seg 5: 11–118 pC). That is within the noise of a
+     1000-shot estimate there, so a drift can be neither confirmed nor excluded.
+
+## Minimising the largest error (`jitter_maxloss.py`, `results/jitter_maxloss/`)
+
+```bash
+python3 -I scripts/jitter_maxloss.py data/tables results/jitter_sequence 2026-10-07_21-43-26 2026-10-08_00-08-19 \
+    2026-10-08_15-42-27 2026-10-08_21-11-47 2026-10-09_07-46-07
+```
+
+Linear models of the jitter (current-shot inputs, one per regime) are trained on the mean of |error|^p for p = 1, 2,
+4 and 8, and on the maximum |error| (p = ∞, Chebyshev regression, a linear program). Training excludes 5-MAD target
+outliers (BCM-lost shots).
+
+| \|error\| pC, test regions | MAE seg 5 | MAE seg 1 | max seg 0 | max seg 3 | max seg 4 | max seg 5 | max seg 1 | max seg 6 | max seg 7 |
+|---|---|---|---|---|---|---|---|---|---|
+| linear, p = 1 | 51.5 | 62.0 | 50.3 | 77.6 | 43.3 | 671 | 1066 | 260 | 5357 |
+| linear, p = 2 | 69.5 | 81.9 | 50.9 | 76.3 | 43.8 | 619 | 495 | 345 | 2423 |
+| linear, p = 8 | 89.8 | 105.1 | 65.9 | 72.3 | 43.1 | 615 | 551 | 353 | 4493 |
+| linear, p = ∞ (minimax) | 133.3 | 111.2 | 93.8 | 70.7 | 46.5 | 689 | 546 | 501 | 4592 |
+| best model (L1-trained GRU) | 40.8 | 45.7 | 50.1 | 74.3 | 40.0 | 777 | 477 | 208 | 2955 |
+
+- **Minimax training does not lower the test maximum.** On the training set it does: at high charge the maximum
+  falls from 30–40 % (L2) to 11 %. But the worst training shots are not like the worst test shots, so on the test set
+  the maximum is about the same or higher, and the MAE is 1.5–4× worse.
+- **What sets the largest errors.** Looking at the five worst test shots per segment:
+  - **Segs 1 and 5: shots without a camera frame** (dark or frozen, ~18 % of test shots). There the model has only the
+    laser, which misses the jitter that the laser does not drive:
+
+    | best model, \|error\| pC | seg 1, camera present | seg 1, camera missing | seg 5, camera present | seg 5, camera missing |
+    |---|---|---|---|---|
+    | MAE | 32 | 106.5 | 32 | 82.5 |
+    | 99th percentile | 120 | 430 | 106 | 371 |
+    | max | 161 | 477 | 160 | 777 |
+
+    With the camera, the worst error at ~5 nC is 160 pC (3 %).
+  - **Seg 7:** the last 8 shots of the run, where the beam jumps by ±60 %. The model follows the direction but not the
+    full size. The GRU clips its inputs at 5 training standard deviations.
+  - **Seg 6:** the camera over-swings (−25 % against the BCM's −9 %).
+- **A dedicated no-camera model does not help:** on camera-missing shots, ridges on the non-camera inputs (trained on
+  all shots, or on camera-missing shots only, ± past BCM) do no better than the GRU (seg 5: 83–86 against 82.5 pC).
+  That is the information limit of the laser readings.
+- **So the maximum can only come down by recovering camera frames.** Otherwise, report an error bar that is ~3× wider
+  when the camera frame is missing, instead of one worst case.
+
+## Decomposing the target by timescale (`jitter_spectrum.py`, `results/jitter_spectrum/`)
+
+```bash
+python3 -I scripts/jitter_spectrum.py data/tables results/jitter_sequence results/jitter_spectrum/jitter_spectrum.png \
+    2026-10-07_21-43-26 2026-10-08_00-08-19 2026-10-08_15-42-27 2026-10-08_21-11-47 2026-10-09_07-46-07
+```
+
+These are Welch power spectra on each test region, of the jitter target, the current-shot ridge's residual and the
+best model's residual. The white BCM noise floor uses σ_n(Q) from `bcm_noise_model.py`. The script also prints the
+variance per band of period: 2–4, 4–10, 10–50 and > 50 shots.
+
+- **No lines.** There is no periodic part (mains beat, feedback cycle) to split off and model on its own.
+- **The target is nearly white,** with a little extra power at periods over 50 shots at high charge: drift that the
+  trailing level lags behind.
+- **The best residual is flat too**: 2–4× the floor in every band at high charge (segs 1, 5, 7), and at the floor on
+  segs 0, 4 and 6. What is left is the same-shot mapping, not a timescale that a separate model could take.
+- **Seg 3 is the exception.** Its residual at periods over 50 shots is 12.9 %² against a floor of 2.7 %², where the
+  floor holds everywhere else. That is a slow drift the 50-shot trailing level misses at low charge. A level that
+  also follows the instruments' slow parts could close it. That band is about a third of seg 3's gap to the floor;
+  the rest is spread over the other bands.
 
