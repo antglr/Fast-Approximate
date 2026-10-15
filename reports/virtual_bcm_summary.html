@@ -136,6 +136,75 @@ dl.terms dt { font-weight: 600; }
 dl.terms dd { margin: 0; color: var(--ink-2); min-width: 0; }
 @media (max-width: 40rem) { dl.terms { grid-template-columns: 1fr; gap: 0.2rem; } dl.terms dd { margin-bottom: 0.6rem; } }
 .toc { display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; font-size: var(--step--1); }
+/* hidden panels: author display rules would otherwise override the hidden attribute */
+[hidden] { display: none !important; }
+
+/* methods: visual blocks */
+.step { display: inline-grid; place-items: center; width: 1.7rem; height: 1.7rem; margin-right: 0.6rem; border-radius: 50%;
+        background: var(--ink); color: var(--bg); font: 600 0.95rem/1 var(--font-mono); vertical-align: 0.15em; }
+.caption { font-size: var(--step--1); color: var(--ink-2); max-width: 75ch; }
+ol.flow { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: 1.6rem; }
+ol.flow li { position: relative; background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 0.8rem 0.9rem; display: grid; gap: 0.2rem; }
+ol.flow li b { font-family: var(--font-display); font-size: var(--step-1); font-weight: 600; }
+ol.flow li span { font-size: var(--step--1); color: var(--ink-2); }
+ol.flow li.out { border-color: var(--model); }
+ol.flow li:not(:last-child)::after { content: "→"; position: absolute; right: -1.25rem; top: 50%; transform: translateY(-50%); color: var(--muted); font-size: 1.1rem; }
+.instruments { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: 1rem; }
+.instrument { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 0.9rem 1rem; display: grid; gap: 0.6rem; align-content: start; min-width: 0; }
+.instrument.wide { grid-column: 1 / -1; }
+.instrument p { font-size: var(--step--1); color: var(--ink-2); }
+.chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+.chip { font-family: var(--font-mono); font-size: 0.8rem; padding: 0.2rem 0.6rem; border-radius: 999px; background: var(--tint); color: var(--ink); border: 1px solid var(--rule); }
+.chip.keep { background: color-mix(in srgb, var(--good) 16%, var(--surface)); border-color: var(--good); }
+.screen-steps { display: flex; flex-wrap: wrap; align-items: center; gap: 0.35rem 0.5rem; font-size: var(--step--1); }
+.screen-steps span { padding: 0.15rem 0.5rem; border-radius: 4px; background: var(--bg); border: 1px solid var(--rule); }
+.screen-steps i { font-style: normal; color: var(--muted); }
+.split { display: flex; height: 3.6rem; border-radius: 6px; overflow: hidden; border: 1px solid var(--rule); }
+.split .seg { display: grid; align-content: center; justify-items: center; gap: 0.1rem; min-width: 0; padding-inline: 0.3rem; text-align: center; }
+.split .seg b { font-size: 0.95rem; }
+.split .seg span { font-size: 0.75rem; color: var(--ink-2); }
+.split .fit { background: color-mix(in srgb, var(--measured) 18%, var(--surface)); }
+.split .val { background: color-mix(in srgb, var(--warn) 18%, var(--surface)); border-left: 1px solid var(--rule); }
+.split .test { background: color-mix(in srgb, var(--model) 22%, var(--surface)); border-left: 3px solid var(--ink); }
+.split-axis { position: relative; display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: 0.75rem; color: var(--muted); margin-top: -0.5rem; }
+.split-axis .cut { position: absolute; left: 70%; transform: translateX(-50%); color: var(--ink); white-space: nowrap; }
+.mini-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr)); gap: 0.8rem; }
+.mini { border-top: 2px solid var(--rule); padding-top: 0.5rem; display: grid; gap: 0.15rem; min-width: 0; }
+.mini span { font-size: var(--step--1); color: var(--ink-2); overflow-wrap: anywhere; }
+.diagram { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 1rem; overflow-x: auto; }
+.diagram svg { display: block; width: 100%; min-width: 36rem; height: auto; }
+.d-in { fill: var(--tint); stroke: var(--measured); stroke-width: 1.5; }
+.d-box { fill: var(--bg); stroke: var(--measured); stroke-width: 1.5; }
+.d-box.model { stroke: var(--model); }
+.d-out { fill: color-mix(in srgb, var(--model) 22%, var(--surface)); stroke: var(--model); stroke-width: 1.5; }
+.d-sum { fill: var(--surface); stroke: var(--ink-2); stroke-width: 1.5; }
+.d-line { fill: none; stroke: var(--ink-2); stroke-width: 1.5; }
+.d-arrowhead { fill: var(--ink-2); }
+.d-title { fill: var(--ink); font-family: var(--font-display); font-size: 16px; font-weight: 600; }
+.d-sub { fill: var(--ink-2); font-family: var(--font-body); font-size: 12px; }
+.d-label { fill: var(--ink-2); font-family: var(--font-mono); font-size: 12px; }
+.d-badge { fill: color-mix(in srgb, var(--good) 14%, var(--surface)); stroke: var(--good); stroke-width: 1.2; }
+.d-badge-t { fill: var(--good); font-family: var(--font-body); font-size: 13px; font-weight: 600; }
+.d-time { stroke: var(--rule); stroke-width: 2; }
+.d-known circle { fill: var(--measured); }
+.d-unknown circle { fill: var(--surface); stroke: var(--muted); stroke-width: 1.5; stroke-dasharray: 2 2; }
+.d-target { fill: var(--model); }
+.d-bracket { fill: none; stroke: var(--muted); stroke-width: 1.2; }
+.d-grid line { stroke: var(--rule); stroke-width: 1; }
+.d-axis text, .d-axis { fill: var(--muted); font-family: var(--font-mono); font-size: 11px; }
+.d-name text, .d-name { fill: var(--ink); font-family: var(--font-body); font-size: 12px; }
+.b-slow rect { fill: var(--measured); }
+.b-fast rect { fill: var(--model); }
+.b-floor line { stroke: var(--ink); stroke-width: 2.5; }
+.k-slow { background: var(--measured); } .k-fast { background: var(--model); }
+.k-floor { background: var(--ink); width: 0.2rem !important; height: 0.8rem !important; }
+.k-keep { background: var(--good); } .k-tried { background: var(--tint); border: 1px solid var(--rule); }
+.triad { display: grid; gap: 0.6rem; justify-items: center; }
+.t-core { background: var(--ink); color: var(--bg); border-radius: 999px; padding: 0.35rem 1rem; font-weight: 600; font-size: 0.95rem; }
+.t-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0.5rem; width: 100%; position: relative; padding-top: 0.8rem; border-top: 2px solid var(--rule); }
+.t-inst { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 0.5rem; text-align: center; font-weight: 600; display: grid; gap: 0.15rem; }
+.t-inst span { font-weight: 400; font-size: 0.78rem; color: var(--ink-2); }
+
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
 </style>
 </head>
@@ -372,90 +441,202 @@ dl.terms dd { margin: 0; color: var(--ink-2); min-width: 0; }
 
 <section class="stack">
   <h2>Methods</h2>
-  <p class="prose">How the numbers on the Summary tab were produced. Everything runs per segment of the stitched clean data (<span class="mono">results/datasets/segment_XX.npz</span>, built by <span class="mono">scripts/extract_features.py</span>), with the shared code in <span class="mono">scripts/vd_models.py</span> and <span class="mono">scripts/fc_models.py</span>.</p>
+  <p class="prose">How the numbers on the Summary tab were produced, one picture per step.</p>
   <nav class="toc" aria-label="Methods sections">
-    <a href="#m-data">Data preparation</a><a href="#m-features">Features</a><a href="#m-eval">Testing and scores</a>
-    <a href="#m-floor">Noise floor</a><a href="#m-vd">Virtual BCM model</a><a href="#m-fc">Forecasting</a><a href="#m-explore">Exploration tools</a>
+    <a href="#m-data">Data</a><a href="#m-features">Features</a><a href="#m-eval">Test</a><a href="#m-vd">Virtual BCM</a>
+    <a href="#m-floor">Noise floor</a><a href="#m-fc">Forecast</a><a href="#m-tried">Tried</a>
   </nav>
 </section>
 
+<!-- 1. data pipeline -->
 <section class="method" id="m-data" aria-labelledby="h-m-data">
-  <h2 id="h-m-data">Data preparation</h2>
-  <dl class="terms">
-    <dt>Segments</dt><dd>Runs from 2026-10-07 to 10-09, cut into contiguous stretches of clean chunks (team's <span class="mono">CLEAN_CUTS.toml</span>). A new segment starts at every new run and wherever chunks were removed. 8 segments, 63,327 shots.</dd>
-    <dt>Timing alignment</dt><dd>Lag scans of every quantity against BCM_GUN showed two groups. BCM and screen are stored in the same row; the laser scope, laser power meters and RF waveforms peak one row later. That group is shifted back by one row inside each segment, so each row is one shot.</dd>
-    <dt>Valid shots</dt><dd>A shot is dropped when the laser scope repeated its previous trace (23% of shots), when the camera repeated its image, or when it is the last row of a segment (no partner after the shift).</dd>
-    <dt>Beam shots</dt><dd>Shots below 20% of the training median charge (no beam or a BCM glitch, down to −3.8 nC) are left out of training and of the scores. They would otherwise dominate the max error and break log-scale models.</dd>
-  </dl>
+  <h3 id="h-m-data"><span class="step">1</span>From raw files to datasets</h3>
+  <ol class="flow">
+    <li><b>HDF5 chunks</b><span>100 shots each, 7 runs</span></li>
+    <li><b>Align rows</b><span>laser and RF moved back 1 row</span></li>
+    <li><b>Clean</b><span>drop frozen scope (23%), no beam</span></li>
+    <li><b>16 features</b><span>per shot</span></li>
+    <li class="out"><b>8 segments</b><span>63,327 shots</span></li>
+  </ol>
 </section>
 
+<!-- 2. features -->
 <section class="method" id="m-features" aria-labelledby="h-m-features">
-  <h2 id="h-m-features">Features (16 per shot)</h2>
-  <dl class="terms">
-    <dt>Laser energy</dt><dd><span class="mono">lab_laser_power</span> from the power meter. The laser scope gives a second estimate: subtract the baseline (mean before 5 ns), then project the trace on the mean pulse train of the segment (5.6–39.8 ns, about 50 pulses at ~1.5 GHz). This matched filter averages over all pulses and beats a plain integral (shot-to-shot r 0.44 vs 0.33 with the charge).</dd>
-    <dt>RF</dt><dd><span class="mono">PGLA_drop</span> = PGLA sample 631 − sample 636: the jump on the crest, at two fixed indices taken from the mean waveform. <span class="mono">PKI15A</span> = mean of the klystron forward amplitude over its flat top (samples 300–640).</dd>
-    <dt>Screen (BTV0125)</dt><dd>Crop to a region of interest, subtract the background (median of the top 150 rows), apply a 3×3 median filter against hot pixels. The amplitude is the peak of a lightly smoothed copy (Gaussian σ = 3 px). The beam mask is the largest connected blob above 5% of that peak, which removes hot-pixel clusters. Intensity, centroid and RMS sizes are moments inside the mask, in mm (0.0107 mm/pixel).</dd>
-    <dt>Spot shape</dt><dd>Eigen-decomposition of the intensity-weighted 2×2 covariance inside the same mask: RMS size along the spot's own axes (<span class="mono">sigma_major</span>, <span class="mono">sigma_minor</span>), tilt of the major axis, ellipticity = minor / major.</dd>
-    <dt>Image SVD</dt><dd><span class="mono">SVD_s1</span>…<span class="mono">s6</span>: the 6 largest singular values of the 4×4-binned image. They are computed per image with no fitting, so they cannot leak information from the test shots.</dd>
-  </dl>
+  <h3 id="h-m-features"><span class="step">2</span>The 16 features, by instrument</h3>
+  <div class="instruments">
+    <div class="instrument">
+      <span class="eyebrow">Laser · 1</span>
+      <div class="chips"><span class="chip">lab_laser_power</span></div>
+      <p>Power meter. Scope trace projected on its mean pulse train for a second estimate.</p>
+    </div>
+    <div class="instrument">
+      <span class="eyebrow">RF · 2</span>
+      <div class="chips"><span class="chip">PGLA_drop</span><span class="chip">PKI15A</span></div>
+      <p>Crest jump: sample 631 − 636. Klystron: mean over the flat top.</p>
+    </div>
+    <div class="instrument wide">
+      <span class="eyebrow">Screen BTV0125 · 13</span>
+      <div class="chips">
+        <span class="chip">BTV_intensity</span><span class="chip">BTV_amplitude</span><span class="chip">BTV_mean_x</span>
+        <span class="chip">sigma_major</span><span class="chip">sigma_minor</span><span class="chip">tilt</span><span class="chip">ellipticity</span>
+        <span class="chip">SVD_s1 … s6</span>
+      </div>
+      <div class="screen-steps" aria-label="Screen processing steps">
+        <span>crop</span><i>→</i><span>− background</span><i>→</i><span>3×3 median</span><i>→</i><span>beam blob &gt; 5% of peak</span><i>→</i><span>moments in mm</span>
+      </div>
+    </div>
+  </div>
 </section>
 
+<!-- 3. test protocol -->
 <section class="method" id="m-eval" aria-labelledby="h-m-eval">
-  <h2 id="h-m-eval">Testing and scores</h2>
-  <p class="prose">Every model is tested the same way, as if the BCM stopped working at a given time.</p>
-  <div class="formula">one segment, in time order:
-[ fit: 0 → 56% ][ validation: 56 → 70% ] | cut at 70% | [ test: 70 → 100% ]
-  train models     choose and stop           BCM "lost"      score once</div>
-  <dl class="terms">
-    <dt>Chronological split</dt><dd>Models are trained before the cut and scored once on the shots after it. Nothing after the cut is used for training. All choices (training window, model, ensemble weights, early stopping) are made on the validation block, never on the test shots.</dd>
-    <dt>Error</dt><dd>Std of inferred − measured charge on the test shots, in pC. Bias is its mean.</dd>
-    <dt>Slow and fast parts</dt><dd>The difference is split into its 51-shot rolling mean (slow: trend or calibration error) and the rest (fast: shot-to-shot error).</dd>
-    <dt>Shot-to-shot fluctuation</dt><dd>A quantity minus its centred 51-shot rolling mean. The fluctuation score compares inferred and measured fluctuations: correlation, size ratio (std inferred / std measured, 1 = right size), and explained variance.</dd>
-    <dt>Concordance (CCC)</dt><dd>Rewards following each swing and reproducing its size at the same time:</dd>
-  </dl>
-  <div class="formula">CCC = 2·cov(p, y) / ( var p + var y + (mean p − mean y)² )      1 = perfect, 0 = no agreement</div>
+  <h3 id="h-m-eval"><span class="step">3</span>How every model is tested</h3>
+  <div class="split" role="img" aria-label="Each segment in time order: fit 0 to 56 percent, validation 56 to 70 percent, cut at 70 percent, test 70 to 100 percent">
+    <div class="seg fit" style="flex: 56"><b>fit</b><span>train</span></div>
+    <div class="seg val" style="flex: 14"><b>validation</b><span>choose, stop</span></div>
+    <div class="seg test" style="flex: 30"><b>test</b><span>score once</span></div>
+  </div>
+  <div class="split-axis"><span>0%</span><span class="cut">cut 70%: BCM "lost"</span><span>100%</span></div>
+  <div class="mini-grid">
+    <div class="mini"><b>Error</b><span>std of inferred − measured, in pC</span></div>
+    <div class="mini"><b>Slow part</b><span>51-shot mean of the error (trend)</span></div>
+    <div class="mini"><b>Fast part</b><span>the rest (shot to shot)</span></div>
+    <div class="mini"><b>CCC</b><span class="mono">2·cov(p,y) / (var p + var y + Δmean²)</span></div>
+  </div>
 </section>
 
-<section class="method" id="m-floor" aria-labelledby="h-m-floor">
-  <h2 id="h-m-floor">BCM noise floor (three-cornered hat)</h2>
-  <p class="prose">The BCM reading is the true charge plus BCM noise. The screen intensity and the laser energy see the same charge with independent noise. From the three shot-to-shot fluctuations, the variance of the common true charge in the BCM reading is:</p>
-  <div class="formula">var(true charge in BCM) = cov(BCM, screen) · cov(BCM, laser) / cov(screen, laser)
-noise floor [pC]        = √(1 − var(true charge in BCM) / var BCM) · std(BCM fluctuation)</div>
-  <p class="prose">A perfect model would still differ from the BCM by this amount, so the fast part of any error cannot go much below it. It assumes linear relations and independent noise, so it is an estimate: in two segments the model ends slightly below it.</p>
-</section>
-
+<!-- 4. virtual BCM model -->
 <section class="method" id="m-vd" aria-labelledby="h-m-vd">
-  <h2 id="h-m-vd">Virtual BCM model (final model C)</h2>
-  <div class="formula">y(t) ≈ trend(t) + fluctuation(t)
-trend(t)       = mean of stage-1 predictions over the previous 51 shots
-fluctuation(t) = stage 2( x(t) − mean of x over the previous 51 shots,  x(t) )</div>
-  <dl class="terms">
-    <dt>Stage 1, trend</dt><dd>Ridge regression on the standardised features, then gradient-boosted trees on what Ridge misses. Trained only on the last W shots before the end of the training data, with W ∈ {all, 4000, 2000, 1000} chosen by the trend error on validation. Recent shots calibrate better because the instrument-to-BCM relation drifts.</dd>
-    <dt>Stage 2, fluctuation</dt><dd>Target: y(t) − mean of y over the previous 51 shots. Inputs: the same deviation of each feature plus the raw features, standardised on the fit shots. Model: MLP with 2 hidden layers of 64 units (GELU, dropout 0.1), AdamW, early stopping on validation, trained on the CCC loss. The average of 6 seeds, with a bias correction on the fit shots.</dd>
-    <dt>Physics constraint</dt><dd>More laser power must give more charge. Stage 1: the Ridge coefficient of laser power is constrained to ≥ 0 (bounded least squares), and the trees get a monotonic constraint on it. Stage 2: a training penalty on any negative slope, mean(relu(−∂output / ∂laser input)).</dd>
-    <dt>Tried and not kept</dt><dd>Log-scale targets, Huber regression, extra-trees, kNN, kernel ridge, GRU over 8 past shots, TCN over 128 shots, rolling-mean features, MSE / std / max-error losses, a correction model on out-of-fold differences, pooling and pretraining across segments, tuned ensembles.</dd>
-  </dl>
+  <h3 id="h-m-vd"><span class="step">4</span>The virtual BCM: two stages, added</h3>
+  <div class="diagram">
+    <svg viewBox="0 0 760 250" role="img" aria-label="Two-stage model: features of shot t go to stage 1, the trend model, and their deviations go to stage 2, the fluctuation model; the two outputs are added to give the charge of shot t.">
+      <defs><marker id="arr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="d-arrowhead" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <!-- input -->
+      <rect class="d-in" x="10" y="95" width="130" height="60" rx="6"/>
+      <text class="d-title" x="75" y="121" text-anchor="middle">x(t)</text>
+      <text class="d-sub" x="75" y="140" text-anchor="middle">16 features, shot t</text>
+      <!-- stage 1 -->
+      <rect class="d-box" x="200" y="22" width="260" height="76" rx="6"/>
+      <text class="d-title" x="330" y="48" text-anchor="middle">Stage 1 · trend</text>
+      <text class="d-sub" x="330" y="67" text-anchor="middle">Ridge + boosted trees</text>
+      <text class="d-sub" x="330" y="85" text-anchor="middle">trained on the most recent shots</text>
+      <!-- stage 2 -->
+      <rect class="d-box model" x="200" y="152" width="260" height="76" rx="6"/>
+      <text class="d-title" x="330" y="178" text-anchor="middle">Stage 2 · fluctuation</text>
+      <text class="d-sub" x="330" y="197" text-anchor="middle">MLP 64×64, CCC loss, 6 seeds</text>
+      <text class="d-sub" x="330" y="215" text-anchor="middle">input: x(t) − mean of last 51 shots</text>
+      <!-- outputs -->
+      <text class="d-label" x="530" y="56" text-anchor="middle">trend(t)</text>
+      <text class="d-label" x="530" y="186" text-anchor="middle">fluctuation(t)</text>
+      <circle class="d-sum" cx="615" cy="125" r="20"/>
+      <text class="d-title" x="615" y="132" text-anchor="middle">+</text>
+      <rect class="d-out" x="665" y="100" width="85" height="50" rx="6"/>
+      <text class="d-title" x="707" y="131" text-anchor="middle">y(t)</text>
+      <!-- arrows -->
+      <path class="d-line" d="M140,115 C170,115 170,60 200,60" marker-end="url(#arr)"/>
+      <path class="d-line" d="M140,135 C170,135 170,190 200,190" marker-end="url(#arr)"/>
+      <path class="d-line" d="M460,60 L560,60 C590,60 600,90 605,106" marker-end="url(#arr)"/>
+      <path class="d-line" d="M460,190 L560,190 C590,190 600,160 605,144" marker-end="url(#arr)"/>
+      <path class="d-line" d="M635,125 L665,125" marker-end="url(#arr)"/>
+      <!-- physics badge -->
+      <rect class="d-badge" x="10" y="200" width="160" height="38" rx="19"/>
+      <text class="d-badge-t" x="90" y="224" text-anchor="middle">laser ↑ ⇒ charge ↑</text>
+    </svg>
+  </div>
+  <p class="caption">Physics constraint, both stages: the laser coefficient is forced ≥ 0, the trees are monotonic in laser power, and the network is penalised for any negative slope.</p>
 </section>
 
+<!-- 5. error budget + noise floor -->
+<section class="method" id="m-floor" aria-labelledby="h-m-floor">
+  <h3 id="h-m-floor"><span class="step">5</span>What the error is made of, and the floor under it</h3>
+  <div class="two">
+    <div class="chart" role="img" aria-label="Slow and fast part of the virtual BCM error in segments 1, 5 and 7, with the BCM noise floor marked on the fast part.">
+      <svg viewBox="0 0 420 210">
+        <!-- scale 0–250 pC over x = 90 … 400 (1.24 px per pC) -->
+        <g class="d-grid"><line x1="90" y1="10" x2="90" y2="180"/><line x1="214" y1="10" x2="214" y2="180"/><line x1="338" y1="10" x2="338" y2="180"/></g>
+        <g class="d-axis" text-anchor="middle"><text x="90" y="196">0</text><text x="214" y="196">100</text><text x="338" y="196">200 pC</text></g>
+        <g class="d-name" text-anchor="end"><text x="82" y="42">seg 1</text><text x="82" y="98">seg 5</text><text x="82" y="154">seg 7</text></g>
+        <g class="b-slow"><rect x="90" y="22" width="59.5" height="14" rx="2"/><rect x="90" y="78" width="48.9" height="14" rx="2"/><rect x="90" y="134" width="63.4" height="14" rx="2"/></g>
+        <g class="b-fast"><rect x="90" y="40" width="136.8" height="14" rx="2"/><rect x="90" y="96" width="150.0" height="14" rx="2"/><rect x="90" y="152" width="276.8" height="14" rx="2"/></g>
+        <g class="b-floor"><line x1="208.5" y1="37" x2="208.5" y2="57"/><line x1="218.8" y1="93" x2="218.8" y2="113"/><line x1="413.4" y1="149" x2="413.4" y2="169"/></g>
+        <g class="d-axis"><text x="155" y="33">48</text><text x="144" y="89">39</text><text x="159" y="145">51</text>
+          <text x="232" y="51">110</text><text x="245" y="107">121</text><text x="372" y="163">223</text></g>
+      </svg>
+      <div class="legend">
+        <span><span class="key k-slow"></span>slow (trend)</span>
+        <span><span class="key k-fast"></span>fast (shot to shot)</span>
+        <span><span class="key k-floor"></span>BCM noise floor</span>
+      </div>
+    </div>
+    <div class="stack">
+      <div class="triad" role="img" aria-label="Three instruments see the same charge, each with its own noise: BCM, screen and laser.">
+        <div class="t-core">true charge</div>
+        <div class="t-row">
+          <div class="t-inst">BCM<span>+ BCM noise</span></div>
+          <div class="t-inst">screen<span>+ camera noise</span></div>
+          <div class="t-inst">laser<span>+ meter noise</span></div>
+        </div>
+      </div>
+      <div class="formula">real charge in BCM = cov(BCM,screen)·cov(BCM,laser) / cov(screen,laser)
+floor = BCM noise = the rest</div>
+      <p class="caption">The fast part sits at the floor: a perfect model would still differ from the BCM by the BCM's own noise.</p>
+    </div>
+  </div>
+</section>
+
+<!-- 6. forecasting -->
 <section class="method" id="m-fc" aria-labelledby="h-m-fc">
-  <h2 id="h-m-fc">Forecasting from the past</h2>
-  <dl class="terms">
-    <dt>Setting</dt><dd>BCM and instruments known up to shot t−N; forecast y(t) for N = 1, 2, 5, 10, 20, 50, 100.</dd>
-    <dt>Oracle-trend floor</dt><dd>Std of y − 51-shot centred rolling mean of y on the test shots: the error of a forecast that knows the trend exactly but nothing about the shot-to-shot part.</dd>
-    <dt>History features</dt><dd>At the origin t−N: the last 8 BCM readings, BCM exponential moving averages (EWMA) at α = 1/2, 1/8, 1/32, 1/128, 1/512 (time scales of about 2 to 512 shots), the last 4 feature vectors, and the feature EWMAs at the same scales.</dd>
-    <dt>Models</dt><dd>EWMA of the BCM with α chosen per N on validation; gradient boosting with N as an input; multi-horizon MLP (123k parameters, 3 hidden layers, N as an input so one model learns all horizons, target = residual against the BCM EWMA at α = 1/32), with and without features, and pretrained on all segments then fine-tuned; tuned ensemble with weights ≥ 0 summing to 1 per segment and horizon (SLSQP on the validation error).</dd>
-    <dt>Two-step model</dt><dd>Encoder over the last 32 feature vectors up to t−N → x̂(t) (16 features, with its own loss) → second network on x̂(t), y(t−N) and the 51-shot BCM mean → y(t). 207k parameters, trained end to end.</dd>
-  </dl>
+  <h3 id="h-m-fc"><span class="step">6</span>Forecasting N shots ahead</h3>
+  <div class="diagram">
+    <svg viewBox="0 0 760 150" role="img" aria-label="Forecast timeline: inputs come from the history up to shot t minus N; after a gap of N unknown shots, the model forecasts shot t.">
+      <defs><marker id="arr2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="d-arrowhead" d="M0,0 L10,5 L0,10 z"/></marker></defs>
+      <line class="d-time" x1="20" y1="70" x2="740" y2="70"/>
+      <!-- history dots -->
+      <g class="d-known">
+        <circle cx="40" cy="70" r="5"/><circle cx="70" cy="70" r="5"/><circle cx="100" cy="70" r="5"/><circle cx="130" cy="70" r="5"/>
+        <circle cx="160" cy="70" r="5"/><circle cx="190" cy="70" r="5"/><circle cx="220" cy="70" r="5"/><circle cx="250" cy="70" r="5"/>
+        <circle cx="280" cy="70" r="5"/><circle cx="310" cy="70" r="5"/><circle cx="340" cy="70" r="5"/><circle cx="370" cy="70" r="5"/>
+        <circle cx="400" cy="70" r="7"/>
+      </g>
+      <g class="d-unknown">
+        <circle cx="460" cy="70" r="5"/><circle cx="520" cy="70" r="5"/><circle cx="580" cy="70" r="5"/><circle cx="640" cy="70" r="5"/>
+      </g>
+      <circle class="d-target" cx="700" cy="70" r="9"/>
+      <!-- brackets -->
+      <path class="d-bracket" d="M30,45 L30,38 L405,38 L405,45"/>
+      <text class="d-label" x="217" y="28" text-anchor="middle">known up to t − N: BCM + features</text>
+      <path class="d-bracket" d="M415,95 L415,102 L690,102 L690,95"/>
+      <text class="d-label" x="552" y="122" text-anchor="middle">N shots not seen yet (N = 1 … 100)</text>
+      <text class="d-title" x="400" y="140" text-anchor="middle">t − N</text>
+      <text class="d-title" x="724" y="76" text-anchor="middle">t</text>
+      <path class="d-line" d="M410,58 C520,10 610,10 690,58" marker-end="url(#arr2)"/>
+      <text class="d-sub" x="560" y="14" text-anchor="middle">forecast</text>
+    </svg>
+  </div>
+  <p class="caption">Inputs at t − N: last BCM readings and features, plus their averages over about 2 to 512 shots.</p>
+  <div class="mini-grid">
+    <div class="mini"><b>Oracle-trend floor</b><span>error if the trend were known exactly</span></div>
+    <div class="mini"><b>Two-step model</b><span class="mono">x(t−N) → x̂(t) → y(t)</span></div>
+    <div class="mini"><b>Multi-horizon MLP</b><span>one model for all N, N as input</span></div>
+    <div class="mini"><b>Tuned ensemble</b><span>weights per N, chosen on validation</span></div>
+  </div>
 </section>
 
-<section class="method" id="m-explore" aria-labelledby="h-m-explore">
-  <h2 id="h-m-explore">Exploration tools</h2>
-  <dl class="terms">
-    <dt>Lag scans</dt><dd>Shot-to-shot correlation of X(t + L) with BCM(t) for L = −5 … +5, after removing a 51-shot rolling mean. A peak at L = +1 means X is stored one row late. A shift is applied only above 5σ, because picking the best of 11 lags lets noise through at 3σ.</dd>
-    <dt>Image PCA</dt><dd>SVD of the 4×4-binned, background-subtracted images of a segment. The first components are beam position on the screen; brightness and spot size come next.</dd>
-    <dt>t-SNE</dt><dd>2-D map of the 16 standardised features (perplexity 40, PCA initialisation), coloured by segment, time and charge. Used to see run-level clusters and whether consecutive shots stay close.</dd>
-    <dt>Neighbour test</dt><dd>How often x(t−N) is among the 10 nearest neighbours of x(t) in the 16-D space, compared with chance (10 / block size).</dd>
-  </dl>
+<!-- 7. tried -->
+<section class="method" id="m-tried" aria-labelledby="h-m-tried">
+  <h3 id="h-m-tried"><span class="step">7</span>Kept and tried</h3>
+  <div class="chips tried">
+    <span class="chip keep">two stages: trend + fluctuation</span>
+    <span class="chip keep">CCC loss</span>
+    <span class="chip keep">recent-shot training window</span>
+    <span class="chip keep">physics constraint</span>
+    <span class="chip keep">6-seed average</span>
+    <span class="chip">log targets</span><span class="chip">Huber</span><span class="chip">extra trees</span><span class="chip">kNN</span>
+    <span class="chip">kernel ridge</span><span class="chip">GRU</span><span class="chip">TCN</span><span class="chip">rolling-mean features</span>
+    <span class="chip">MSE / std / max-error loss</span><span class="chip">residual correction model</span>
+    <span class="chip">pooled segments</span><span class="chip">pretrain + fine-tune</span><span class="chip">tuned ensemble</span>
+  </div>
+  <div class="legend"><span><span class="key k-keep"></span>kept in the final model</span><span><span class="key k-tried"></span>tried, no reliable gain</span></div>
 </section>
 
 </div>
