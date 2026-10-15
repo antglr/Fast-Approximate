@@ -582,7 +582,8 @@ python3 -I scripts/jitter_sequence.py data/tables results/jitter_sequence 2026-1
     2026-10-08_00-08-19 2026-10-07_21-43-26 2026-10-08_15-42-27            # needs PyTorch and <run>_camera.npz; ~30 min
 ```
 
-This is the fast-model step of the slow/fast plan in `../docs/charge_models_explained.md`. It is still same-shot:
+This is the fast-model step of the slow/fast plan in `../docs/charge_models_explained.md`. A notebook version on the team
+datasets (`results/datasets/`), laid out like `08_simple_models.ipynb`, is `../notebooks/08_01_jitter_models.ipynb`. It is still same-shot:
 nothing is forecast.
 
 **Causal slow/fast split**, within each clean segment:
