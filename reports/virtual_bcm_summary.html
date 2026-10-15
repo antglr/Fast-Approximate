@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Fast-Approximate BCM Study</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column (~72ch) with wide tables/charts allowed to scroll in their own box; report rhythm, no hero art */
+:root {
+  --bg: #f5f7fa;          /* cool lab paper */
+  --surface: #ffffff;
+  --ink: #18212e;         /* instrument navy */
+  --ink-2: #4a5566;
+  --muted: #7d8796;
+  --rule: #dfe4eb;
+  --measured: #2a78d6;    /* measured / reference: same blue as the notebooks */
+  --model: #e0602a;       /* inferred / model: same orange as the notebooks */
+  --floor: #9aa3b0;       /* BCM noise floor */
+  --good: #13854f;
+  --warn: #b26a00;
+  --tint: #eaf1fb;
+  --font-display: "Barlow Semi Condensed", "Arial Narrow", "Helvetica Neue", Arial, sans-serif;
+  --font-body: "IBM Plex Sans", "Segoe UI", Helvetica, Arial, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --step--1: 0.84rem; --step-0: 1rem; --step-1: 1.2rem; --step-2: 1.55rem; --step-3: 2.2rem;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #11161e; --surface: #18202b; --ink: #e7ecf3; --ink-2: #b4bdca; --muted: #8a94a3; --rule: #2b3543;
+    --measured: #5a9cf0; --model: #f08a55; --floor: #6f7a89; --good: #3cc483; --warn: #e2a33a; --tint: #1c2a3d;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #11161e; --surface: #18202b; --ink: #e7ecf3; --ink-2: #b4bdca; --muted: #8a94a3; --rule: #2b3543;
+  --measured: #5a9cf0; --model: #f08a55; --floor: #6f7a89; --good: #3cc483; --warn: #e2a33a; --tint: #1c2a3d;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: var(--step-0); line-height: 1.6;
+  padding-inline: 16px; padding-block: 0 64px;
+}
+.page { max-width: 72rem; margin-inline: auto; display: grid; gap: 3.2rem; }
+.prose { max-width: 70ch; }
+h1, h2, h3 { font-family: var(--font-display); line-height: 1.12; text-wrap: balance; margin: 0; }
+h1 { font-size: clamp(2rem, 5vw, 3rem); font-weight: 700; letter-spacing: -0.01em; }
+h2 { font-size: var(--step-3); font-weight: 600; }
+h3 { font-size: var(--step-1); font-weight: 600; }
+p { margin: 0; }
+.stack { display: grid; gap: 1rem; }
+.eyebrow {
+  font-family: var(--font-mono); font-size: var(--step--1); letter-spacing: 0.08em;
+  text-transform: uppercase; color: var(--muted);
+}
+.num, td, .mono { font-variant-numeric: tabular-nums; }
+.mono { font-family: var(--font-mono); font-size: 0.92em; }
+a { color: var(--measured); }
+a:focus-visible, summary:focus-visible { outline: 2px solid var(--measured); outline-offset: 2px; }
+
+/* header */
+header.top { padding-block: 3.2rem 0; display: grid; gap: 1.2rem; border-bottom: 1px solid var(--rule); padding-bottom: 2rem; }
+.thesis { font-size: var(--step-1); color: var(--ink-2); max-width: 62ch; }
+.meta { display: flex; flex-wrap: wrap; gap: 0.4rem 1.6rem; font-family: var(--font-mono); font-size: var(--step--1); color: var(--muted); }
+
+/* key figures */
+.figures { display: grid; grid-template-columns: repeat(auto-fit, minmax(14rem, 1fr)); gap: 1rem; }
+.figure { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 1.1rem 1.2rem; display: grid; gap: 0.35rem; align-content: start; }
+.figure .val { font-family: var(--font-display); font-size: 2.1rem; font-weight: 600; line-height: 1; }
+.figure .val small { font-size: 1rem; font-weight: 500; color: var(--ink-2); }
+.figure .lab { font-size: var(--step--1); color: var(--ink-2); }
+
+/* tables */
+.table-wrap { overflow-x: auto; border: 1px solid var(--rule); border-radius: 6px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+th, td { padding: 0.55rem 0.8rem; text-align: right; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+thead th { font-family: var(--font-mono); font-size: 0.76rem; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--muted); background: var(--bg); }
+tbody tr:last-child td { border-bottom: 0; }
+tr.hl td { background: var(--tint); font-weight: 600; }
+tr.ref td { color: var(--muted); font-style: italic; }
+td.wrap, th.wrap { white-space: normal; min-width: 16rem; text-align: left; }
+.better { color: var(--good); font-weight: 600; }
+.worse { color: var(--warn); }
+caption { caption-side: bottom; text-align: left; padding: 0.6rem 0.8rem; font-size: var(--step--1); color: var(--muted); }
+
+/* chart */
+.chart { background: var(--surface); border: 1px solid var(--rule); border-radius: 6px; padding: 1rem; overflow-x: auto; }
+.chart svg { display: block; width: 100%; min-width: 34rem; height: auto; }
+.chart text { font-family: var(--font-mono); font-size: 11px; fill: var(--ink-2); }
+.chart .lab { font-family: var(--font-body); font-size: 12px; fill: var(--ink); }
+.legend { display: flex; flex-wrap: wrap; gap: 0.4rem 1.4rem; font-size: var(--step--1); color: var(--ink-2); margin-top: 0.6rem; }
+.key { display: inline-block; width: 0.9rem; height: 0.6rem; border-radius: 2px; margin-right: 0.4rem; vertical-align: middle; }
+
+/* pipeline */
+.pipeline { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr)); gap: 1rem; }
+.pipeline > div { border-top: 3px solid var(--measured); padding-top: 0.7rem; display: grid; gap: 0.35rem; align-content: start; min-width: 0; }
+.pipeline > div.model { border-top-color: var(--model); }
+.pipeline p { font-size: 0.95rem; color: var(--ink-2); }
+
+/* lists */
+ul.clean { margin: 0; padding-left: 1.2rem; display: grid; gap: 0.5rem; }
+ul.clean li::marker { color: var(--muted); }
+.two { display: grid; grid-template-columns: repeat(auto-fit, minmax(20rem, 1fr)); gap: 2rem; }
+.two > * { min-width: 0; }
+.note { border-left: 3px solid var(--warn); padding: 0.2rem 0 0.2rem 1rem; color: var(--ink-2); }
+details { border-top: 1px solid var(--rule); padding-top: 0.8rem; }
+summary { cursor: pointer; font-weight: 600; }
+footer { border-top: 1px solid var(--rule); padding-top: 1.4rem; font-size: var(--step--1); color: var(--muted); }
+
+/* tabs */
+.tabs { display: flex; gap: 0.4rem; border-bottom: 1px solid var(--rule); margin-top: -2.2rem; }
+.tabs button {
+  font: 600 var(--step-1)/1 var(--font-display); letter-spacing: 0.01em;
+  color: var(--ink-2); background: none; border: 0; border-bottom: 3px solid transparent;
+  padding: 0.7rem 0.9rem 0.6rem; cursor: pointer;
+}
+.tabs button:hover { color: var(--ink); }
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--model); }
+.tabs button:focus-visible { outline: 2px solid var(--measured); outline-offset: -2px; }
+.panel { display: grid; gap: 3.2rem; }
+
+/* methods */
+.method { display: grid; gap: 0.9rem; }
+.method h3 { margin-top: 0.4rem; }
+.formula {
+  font-family: var(--font-mono); font-size: 0.9rem; line-height: 1.7;
+  background: var(--tint); border-radius: 4px; padding: 0.7rem 1rem; overflow-x: auto; white-space: pre;
+}
+dl.terms { display: grid; grid-template-columns: minmax(9rem, 14rem) 1fr; gap: 0.6rem 1.4rem; margin: 0; }
+dl.terms dt { font-weight: 600; }
+dl.terms dd { margin: 0; color: var(--ink-2); min-width: 0; }
+@media (max-width: 40rem) { dl.terms { grid-template-columns: 1fr; gap: 0.2rem; } dl.terms dd { margin-bottom: 0.6rem; } }
+.toc { display: flex; flex-wrap: wrap; gap: 0.4rem 1.2rem; font-size: var(--step--1); }
+@media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto; } }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+<header class="top">
+  <span class="eyebrow">CLEAR gun · BCM_GUN · hackathon study, 13–14 Oct 2026</span>
+  <h1>Fast-Approximate BCM Study</h1>
+  <p class="thesis">With the BCM switched off, the charge of each shot can be inferred from that shot's own laser and screen measurements to <strong>1–2.5%</strong> at 5–10 nC and about <strong>13 pC</strong> at 0.1 nC. What is left is the BCM's own noise and a slow calibration drift. Forecasting from the past recovers only the trend.</p>
+  <div class="meta">
+    <span>7 runs · 2026-10-07 → 10-09</span>
+    <span>8 clean segments · 63,327 shots (53,091 valid)</span>
+    <span>16 features per shot</span>
+    <span>notebooks 00 → 10_01</span>
+  </div>
+</header>
+
+<div class="tabs" role="tablist" aria-label="Report sections">
+  <button type="button" role="tab" id="tab-summary" aria-controls="summary" aria-selected="true">Summary</button>
+  <button type="button" role="tab" id="tab-methods" aria-controls="methods" aria-selected="false" tabindex="-1">Methods</button>
+</div>
+
+<div class="panel" id="summary" role="tabpanel" aria-labelledby="tab-summary">
+
+<section class="stack" aria-labelledby="h-figures">
+  <h2 id="h-figures">Main numbers</h2>
+  <div class="figures">
+    <div class="figure"><span class="eyebrow">Virtual BCM, high charge</span><span class="val num">0.9–2.5<small>%</small></span><span class="lab">std of inferred − measured, segments at 4.8–10 nC (49–230 pC)</span></div>
+    <div class="figure"><span class="eyebrow">Virtual BCM, low charge</span><span class="val num">≈13<small> pC</small></span><span class="lab">segments at 0.10–0.25 nC (5–13% of the charge)</span></div>
+    <div class="figure"><span class="eyebrow">Shot-to-shot part</span><span class="val num">≈ floor</span><span class="lab">at or near the BCM's own estimated noise in every segment</span></div>
+    <div class="figure"><span class="eyebrow">Forecast N ≤ 20 shots</span><span class="val num">+5–8<small>%</small></span><span class="lab">above the best possible from the past (oracle-trend floor)</span></div>
+  </div>
+</section>
+
+<section class="stack" aria-labelledby="h-what">
+  <h2 id="h-what">What was done</h2>
+  <p class="prose">The work went in four stages. Each stage answered a question that decided the next one.</p>
+  <div class="pipeline">
+    <div><span class="eyebrow">Stage 1 · 00–04</span><h3>Understand the data</h3><p>HDF5 chunks of 100 shots: scalars (BCM, laser power meters, magnets, temperatures, humidity), RF waveforms, laser scope trace (2002 samples at 25 ps, a ~50-pulse train at ~1.5 GHz), BTV0125 screen images (1216 × 1936, 12-bit).</p></div>
+    <div><span class="eyebrow">Stage 2 · 05–07</span><h3>Correlate and align</h3><p>Which instruments follow the charge, shot to shot and over time, and in which row each one is stored. Per-day feature selection (|r| ≥ 0.25 with BCM, ≤ 0.5 between features).</p></div>
+    <div class="model"><span class="eyebrow">Stage 3 · 08–08_06</span><h3>Virtual BCM</h3><p>Infer y(t) from the same shot's x(t), as if the BCM were lost after 70% of each segment. Trend + shot-to-shot two-stage models, losses, physics constraints, ensembles.</p></div>
+    <div class="model"><span class="eyebrow">Stage 4 · 09–10_01</span><h3>Forecast from the past</h3><p>How much of x(t) is in x(t−N) (t-SNE, autocorrelation), then forecast y(t) from data up to t−N, against an oracle-trend floor.</p></div>
+  </div>
+</section>
+
+<section class="stack" aria-labelledby="h-data">
+  <h2 id="h-data">What the data showed</h2>
+  <div class="two">
+    <ul class="clean">
+      <li><strong>The laser drives the charge.</strong> Shot to shot, the lab laser power meter follows BCM_GUN at r = 0.83 and the screen intensity at r = 0.79 (run 07-46-07).</li>
+      <li><strong>Instruments are not stored in the same row.</strong> BCM and screen are aligned; the laser scope, the power meters and the RF waveforms are stored one row late. Every model shifts them back by one row.</li>
+      <li><strong>The one-row shift is not exact for every shot.</strong> In segments 1, 5 and 7 the laser one row earlier still correlates with the BCM almost as strongly (0.37 vs 0.47, 0.38 vs 0.39, 0.67 vs 0.63).</li>
+    </ul>
+    <ul class="clean">
+      <li><strong>The laser scope repeats itself.</strong> 23% of its traces are copies of the previous shot. They are flagged and dropped.</li>
+      <li><strong>The screen needed care.</strong> Clusters of hot pixels faked peaks in 27 shots, and the faint halo makes the RMS size depend on the cut (1.7 mm with no cut, 0.28 mm at 5% of the peak).</li>
+      <li><strong>Klystron, magnets and environment do not explain the charge shot to shot.</strong> Temperature and humidity only follow it over tens of minutes.</li>
+      <li><strong>Each run has its own operating point.</strong> On a t-SNE map the runs form separate islands, so a model has to be fitted per segment.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="stack" aria-labelledby="h-vd">
+  <h2 id="h-vd">Virtual BCM results</h2>
+  <p class="prose">Two-stage model: a <strong>trend</strong> stage (Ridge + gradient-boosted trees, trained on the most recent shots before the BCM is lost) and a <strong>shot-to-shot</strong> stage (MLP trained on the concordance loss, 6 seeds). Scores are on the shots after the cut, with beam.</p>
+
+  <div class="chart" role="img" aria-label="Bar chart of the error of the virtual BCM as a percentage of the mean charge per segment, with the estimated BCM noise floor marked on each bar.">
+    <svg viewBox="0 0 640 300" preserveAspectRatio="xMinYMin meet">
+      <!-- scale: 0–14 % over x = 170 … 610 (31.43 px per %) ; rows every 36 px from y = 30 -->
+      <g stroke="var(--rule)" stroke-width="1">
+        <line x1="170" y1="18" x2="170" y2="282"/>
+        <line x1="295.7" y1="18" x2="295.7" y2="282"/>
+        <line x1="421.4" y1="18" x2="421.4" y2="282"/>
+        <line x1="547.1" y1="18" x2="547.1" y2="282"/>
+      </g>
+      <g text-anchor="middle">
+        <text x="170" y="296">0%</text><text x="295.7" y="296">4%</text><text x="421.4" y="296">8%</text><text x="547.1" y="296">12%</text>
+      </g>
+      <g text-anchor="end">
+        <text class="lab" x="160" y="34">seg 0 · 0.25 nC</text>
+        <text class="lab" x="160" y="70">seg 1 · 4.82 nC</text>
+        <text class="lab" x="160" y="106">seg 3 · 0.12 nC</text>
+        <text class="lab" x="160" y="142">seg 4 · 0.10 nC</text>
+        <text class="lab" x="160" y="178">seg 5 · 5.55 nC</text>
+        <text class="lab" x="160" y="214">seg 6 · 5.44 nC</text>
+        <text class="lab" x="160" y="250">seg 7 · 10.12 nC</text>
+      </g>
+      <!-- model bars: C (08_05) std / mean charge -->
+      <g fill="var(--model)">
+        <rect x="170" y="22" width="163.4" height="16" rx="2"/>
+        <rect x="170" y="58" width="78.6" height="16" rx="2"/>
+        <rect x="170" y="94" width="320.6" height="16" rx="2"/>
+        <rect x="170" y="130" width="396.0" height="16" rx="2"/>
+        <rect x="170" y="166" width="72.3" height="16" rx="2"/>
+        <rect x="170" y="202" width="28.3" height="16" rx="2"/>
+        <rect x="170" y="238" width="72.3" height="16" rx="2"/>
+      </g>
+      <!-- noise floor ticks -->
+      <g stroke="var(--ink)" stroke-width="2.5">
+        <line x1="336.6" y1="18" x2="336.6" y2="42"/>
+        <line x1="232.9" y1="54" x2="232.9" y2="78"/>
+        <line x1="452.9" y1="90" x2="452.9" y2="114"/>
+        <line x1="531.4" y1="126" x2="531.4" y2="150"/>
+        <line x1="229.7" y1="162" x2="229.7" y2="186"/>
+        <line x1="187.6" y1="198" x2="187.6" y2="222"/>
+        <line x1="251.7" y1="234" x2="251.7" y2="258"/>
+      </g>
+      <g>
+        <text x="341.6" y="34">5.2% · 12.9 pC</text>
+        <text x="256.6" y="70">2.5% · 121 pC</text>
+        <text x="498.6" y="106">10.2% · 12.7 pC</text>
+        <text x="574" y="142">12.6%</text>
+        <text x="250.3" y="178">2.3% · 127 pC</text>
+        <text x="206.3" y="214">0.9% · 49 pC</text>
+        <text x="258.7" y="250">2.3% · 230 pC</text>
+      </g>
+    </svg>
+    <div class="legend">
+      <span><span class="key" style="background: var(--model)"></span>virtual BCM error (std of inferred − measured) / mean charge</span>
+      <span><span class="key" style="background: var(--ink); height: 0.8rem; width: 0.2rem"></span>estimated BCM noise floor (shot-to-shot)</span>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>std of inferred − measured [pC]</th><th>seg 0</th><th>seg 1</th><th>seg 3</th><th>seg 4</th><th>seg 5</th><th>seg 6</th><th>seg 7</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>MLP · CCC, trend on all history (08_03)</td><td class="num">12.8</td><td class="num">195.7</td><td class="num">12.7</td><td class="num">12.7</td><td class="num">134.4</td><td class="num">49.9</td><td class="num">234.9</td></tr>
+        <tr class="hl"><td>C: trend on recent shots + MLP · CCC × 6 (08_05)</td><td class="num">12.9</td><td class="num">120.6</td><td class="num">12.7</td><td class="num">12.9</td><td class="num">127.4</td><td class="num">48.6</td><td class="num">229.6</td></tr>
+        <tr><td>C + physics constraint, more laser ⇒ more charge (08_06)</td><td class="num">13.1</td><td class="num">125.9</td><td class="num">12.8</td><td class="num">13.0</td><td class="num">134.8</td><td class="num">48.5</td><td class="num better">214.3</td></tr>
+        <tr class="ref"><td>estimated BCM noise floor (shot-to-shot)</td><td class="num">13.2</td><td class="num">95.6</td><td class="num">11.1</td><td class="num">11.7</td><td class="num">103.9</td><td class="num">30.3</td><td class="num">260.8</td></tr>
+      </tbody>
+      <caption>Segment 2 (154 valid shots) is too small and is skipped. The noise floor comes from three instruments that see the same charge (BCM, screen, laser) and assumes linear relations and independent noise; it is approximate.</caption>
+    </table>
+  </div>
+
+  <div class="two">
+    <div class="stack">
+      <h3>What made the difference</h3>
+      <ul class="clean">
+        <li><strong>Splitting trend and shot-to-shot.</strong> Each stage gets its own target and its own model.</li>
+        <li><strong>The concordance loss (CCC) for the shot-to-shot stage.</strong> MSE shrinks the predicted fluctuations to 55–65% of their real size; CCC brings them to about 90%.</li>
+        <li><strong>Training the trend stage on recent shots only.</strong> This took segment 1 from 196 to 121 pC by removing a +0.5 nC overshoot.</li>
+        <li><strong>The physics constraint.</strong> Without it the model predicted less charge for more laser power on 40–98% of shots. With it this never happens, and the segment where the model has to extrapolate improves (230 → 214 pC).</li>
+      </ul>
+    </div>
+    <div class="stack">
+      <h3>What did not help</h3>
+      <ul class="clean">
+        <li>A second model trained to predict the difference (residual correction): worse, even on out-of-fold differences.</li>
+        <li>One model pooled over all segments: much worse. The runs behave differently.</li>
+        <li>Max-error loss: worst on almost every metric, max error included.</li>
+        <li>Longer memory for the trend (rolling means, TCN), wider networks, GRU over past shots: mixed at best.</li>
+        <li>Tuned ensembles: chosen on validation, neutral on test.</li>
+      </ul>
+    </div>
+  </div>
+  <p class="note prose">Most of the inference comes from the screen intensity (BTV0125). A BTV screen intercepts the beam, so check whether the screen can stay in during operation before relying on this model. A laser-and-RF-only version has not been tested yet.</p>
+</section>
+
+<section class="stack" aria-labelledby="h-fc">
+  <h2 id="h-fc">Forecasting from the past</h2>
+  <p class="prose">Everything is known up to shot t−N; the task is to forecast the charge of shot t. The past carries the slow drift of the state (laser power keeps r ≈ 0.5 out to 50 shots) but almost none of its shot-to-shot part (r ≈ 0 after 1–2 shots). So the best possible forecast knows the trend exactly. Its error, the <strong>oracle-trend floor</strong>, is the BCM's own shot-to-shot spread.</p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr><th>excess over the oracle-trend floor (mean over segments)</th><th>N = 1</th><th>N = 5</th><th>N = 20</th><th>N = 50</th><th>N = 100</th></tr>
+      </thead>
+      <tbody>
+        <tr><td>persistence, y(t) = y(t−N)</td><td class="num">+32.6%</td><td class="num">+41.6%</td><td class="num">+41.7%</td><td class="num">+46.4%</td><td class="num">+51.6%</td></tr>
+        <tr><td>mean of the last 51 BCM shots</td><td class="num">+5.3%</td><td class="num">+6.2%</td><td class="num">+8.6%</td><td class="num">+14.0%</td><td class="num">+22.8%</td></tr>
+        <tr class="hl"><td>tuned ensemble (EWMA, gradient boosting, multi-horizon MLPs)</td><td class="num">−0.8%*</td><td class="num">+4.8%</td><td class="num">+8.2%</td><td class="num">+13.4%</td><td class="num">+22.5%</td></tr>
+      </tbody>
+      <caption>* Below the floor only because segment 7 has real one-shot memory in its charge (the BCM-only model shows the same gain). At N = 1, features from row t−1 can also hold shot t's own laser reading.</caption>
+    </table>
+  </div>
+  <div class="two">
+    <div class="stack">
+      <h3>Two-step model x(t−N) → x̂(t) → y(t)</h3>
+      <p>Step 2 works: given the true x(t) it matches the virtual BCM. Step 1 is the limit: x̂(t) recovers at best R² ≈ 0.35 (laser power), and about 0 for the spot shape and RF. The forecast is no better than the 51-shot BCM mean, at any model size.</p>
+    </div>
+    <div class="stack">
+      <h3>Where forecasting stands</h3>
+      <p>Up to N ≈ 20 the forecasts sit within 1–7% of the floor in every segment. At N = 50–100 the remaining error is trend drift that the past does not announce (about 170 pC of slow error in segments 1 and 5 at N = 100). The features add little beyond the BCM history and overfit in segment 3.</p>
+    </div>
+  </div>
+</section>
+
+<section class="stack" aria-labelledby="h-next">
+  <h2 id="h-next">Recommendations and open points</h2>
+  <div class="two">
+    <ul class="clean">
+      <li><strong>Freeze the virtual BCM at C with the physics constraint.</strong> Model choice no longer changes the result beyond the noise of a single test.</li>
+      <li><strong>Re-extract the datasets with per-shot timestamp alignment</strong> (<span class="mono">scripts/pulses.py</span>) on the cluster. The leftover laser timing jitter sits exactly in the segments with the largest errors (1, 5, 7).</li>
+      <li><strong>Make the evaluation robust:</strong> several cut times per segment, and train on earlier runs, test on a later one.</li>
+    </ul>
+    <ul class="clean">
+      <li><strong>Add an uncertainty band</strong> to each inferred shot and a flag when the inputs leave the training range.</li>
+      <li><strong>Test a version without the screen</strong> (laser and RF only).</li>
+      <li><strong>For forecasting, use the simplest model near the floor:</strong> an EWMA or the BCM-history MLP, plus a band that widens with N.</li>
+    </ul>
+  </div>
+  <p class="prose" style="color: var(--ink-2)">Limits of these numbers: one 70% cut per segment, so differences of a few percent are within test noise. The data in <span class="mono">data/</span> was replaced once during the study (run 11-48-33 → 07-46-07); everything here uses the later data and the team's stitched segments.</p>
+</section>
+
+<section class="stack" aria-labelledby="h-nb">
+  <h2 id="h-nb">Where everything is</h2>
+  <div class="table-wrap">
+    <table>
+      <thead><tr><th>Notebook</th><th class="wrap">Question</th><th class="wrap">Answer</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">00_scalar</td><td class="wrap">Which scalars follow the charge, and at what lag?</td><td class="wrap">Laser power meters only (r ≈ 0.82, stored one row late).</td></tr>
+        <tr><td class="mono">01, 02</td><td class="wrap">What is in the files; what does the PGLA crest jump do?</td><td class="wrap">123 datasets per chunk; PGLA jump ≈ 7 mV, weak link to charge.</td></tr>
+        <tr><td class="mono">03</td><td class="wrap">How to read the laser scope?</td><td class="wrap">Matched filter on the pulse train; 23% frozen traces; one row late.</td></tr>
+        <tr><td class="mono">04, 04_1</td><td class="wrap">Screen parameters and image PCA</td><td class="wrap">Intensity tracks charge; PCA is dominated by beam position.</td></tr>
+        <tr><td class="mono">05, 06_01–06_05</td><td class="wrap">Correlations and lag studies</td><td class="wrap">Two timing groups; charge remembers 2–3 shots only.</td></tr>
+        <tr><td class="mono">07_03</td><td class="wrap">Per-day feature selection</td><td class="wrap">Laser power, PGLA drop and one screen brightness variable recur.</td></tr>
+        <tr><td class="mono">08 → 08_06</td><td class="wrap">Virtual BCM: models, losses, improvements</td><td class="wrap">Results above; final model C (+ physics).</td></tr>
+        <tr><td class="mono">09</td><td class="wrap">How much of x(t) is in x(t−N)?</td><td class="wrap">The slow drift only.</td></tr>
+        <tr><td class="mono">10, 10_01</td><td class="wrap">Forecast y(t) from the past</td><td class="wrap">Within 5–8% of the floor for N ≤ 20.</td></tr>
+      </tbody>
+      <caption>Shared code: scripts/vd_models.py, vd_plots.py, fc_models.py. Figures and predictions: results/virtual_diagnostic/, results/forecast_10_01/, results/tsne/.</caption>
+    </table>
+  </div>
+</section>
+
+</div>
+
+<div class="panel" id="methods" role="tabpanel" aria-labelledby="tab-methods" hidden>
+
+<section class="stack">
+  <h2>Methods</h2>
+  <p class="prose">How the numbers on the Summary tab were produced. Everything runs per segment of the stitched clean data (<span class="mono">results/datasets/segment_XX.npz</span>, built by <span class="mono">scripts/extract_features.py</span>), with the shared code in <span class="mono">scripts/vd_models.py</span> and <span class="mono">scripts/fc_models.py</span>.</p>
+  <nav class="toc" aria-label="Methods sections">
+    <a href="#m-data">Data preparation</a><a href="#m-features">Features</a><a href="#m-eval">Testing and scores</a>
+    <a href="#m-floor">Noise floor</a><a href="#m-vd">Virtual BCM model</a><a href="#m-fc">Forecasting</a><a href="#m-explore">Exploration tools</a>
+  </nav>
+</section>
+
+<section class="method" id="m-data" aria-labelledby="h-m-data">
+  <h2 id="h-m-data">Data preparation</h2>
+  <dl class="terms">
+    <dt>Segments</dt><dd>Runs from 2026-10-07 to 10-09, cut into contiguous stretches of clean chunks (team's <span class="mono">CLEAN_CUTS.toml</span>). A new segment starts at every new run and wherever chunks were removed. 8 segments, 63,327 shots.</dd>
+    <dt>Timing alignment</dt><dd>Lag scans of every quantity against BCM_GUN showed two groups. BCM and screen are stored in the same row; the laser scope, laser power meters and RF waveforms peak one row later. That group is shifted back by one row inside each segment, so each row is one shot.</dd>
+    <dt>Valid shots</dt><dd>A shot is dropped when the laser scope repeated its previous trace (23% of shots), when the camera repeated its image, or when it is the last row of a segment (no partner after the shift).</dd>
+    <dt>Beam shots</dt><dd>Shots below 20% of the training median charge (no beam or a BCM glitch, down to −3.8 nC) are left out of training and of the scores. They would otherwise dominate the max error and break log-scale models.</dd>
+  </dl>
+</section>
+
+<section class="method" id="m-features" aria-labelledby="h-m-features">
+  <h2 id="h-m-features">Features (16 per shot)</h2>
+  <dl class="terms">
+    <dt>Laser energy</dt><dd><span class="mono">lab_laser_power</span> from the power meter. The laser scope gives a second estimate: subtract the baseline (mean before 5 ns), then project the trace on the mean pulse train of the segment (5.6–39.8 ns, about 50 pulses at ~1.5 GHz). This matched filter averages over all pulses and beats a plain integral (shot-to-shot r 0.44 vs 0.33 with the charge).</dd>
+    <dt>RF</dt><dd><span class="mono">PGLA_drop</span> = PGLA sample 631 − sample 636: the jump on the crest, at two fixed indices taken from the mean waveform. <span class="mono">PKI15A</span> = mean of the klystron forward amplitude over its flat top (samples 300–640).</dd>
+    <dt>Screen (BTV0125)</dt><dd>Crop to a region of interest, subtract the background (median of the top 150 rows), apply a 3×3 median filter against hot pixels. The amplitude is the peak of a lightly smoothed copy (Gaussian σ = 3 px). The beam mask is the largest connected blob above 5% of that peak, which removes hot-pixel clusters. Intensity, centroid and RMS sizes are moments inside the mask, in mm (0.0107 mm/pixel).</dd>
+    <dt>Spot shape</dt><dd>Eigen-decomposition of the intensity-weighted 2×2 covariance inside the same mask: RMS size along the spot's own axes (<span class="mono">sigma_major</span>, <span class="mono">sigma_minor</span>), tilt of the major axis, ellipticity = minor / major.</dd>
+    <dt>Image SVD</dt><dd><span class="mono">SVD_s1</span>…<span class="mono">s6</span>: the 6 largest singular values of the 4×4-binned image. They are computed per image with no fitting, so they cannot leak information from the test shots.</dd>
+  </dl>
+</section>
+
+<section class="method" id="m-eval" aria-labelledby="h-m-eval">
+  <h2 id="h-m-eval">Testing and scores</h2>
+  <p class="prose">Every model is tested the same way, as if the BCM stopped working at a given time.</p>
+  <div class="formula">one segment, in time order:
+[ fit: 0 → 56% ][ validation: 56 → 70% ] | cut at 70% | [ test: 70 → 100% ]
+  train models     choose and stop           BCM "lost"      score once</div>
+  <dl class="terms">
+    <dt>Chronological split</dt><dd>Models are trained before the cut and scored once on the shots after it. Nothing after the cut is used for training. All choices (training window, model, ensemble weights, early stopping) are made on the validation block, never on the test shots.</dd>
+    <dt>Error</dt><dd>Std of inferred − measured charge on the test shots, in pC. Bias is its mean.</dd>
+    <dt>Slow and fast parts</dt><dd>The difference is split into its 51-shot rolling mean (slow: trend or calibration error) and the rest (fast: shot-to-shot error).</dd>
+    <dt>Shot-to-shot fluctuation</dt><dd>A quantity minus its centred 51-shot rolling mean. The fluctuation score compares inferred and measured fluctuations: correlation, size ratio (std inferred / std measured, 1 = right size), and explained variance.</dd>
+    <dt>Concordance (CCC)</dt><dd>Rewards following each swing and reproducing its size at the same time:</dd>
+  </dl>
+  <div class="formula">CCC = 2·cov(p, y) / ( var p + var y + (mean p − mean y)² )      1 = perfect, 0 = no agreement</div>
+</section>
+
+<section class="method" id="m-floor" aria-labelledby="h-m-floor">
+  <h2 id="h-m-floor">BCM noise floor (three-cornered hat)</h2>
+  <p class="prose">The BCM reading is the true charge plus BCM noise. The screen intensity and the laser energy see the same charge with independent noise. From the three shot-to-shot fluctuations, the variance of the common true charge in the BCM reading is:</p>
+  <div class="formula">var(true charge in BCM) = cov(BCM, screen) · cov(BCM, laser) / cov(screen, laser)
+noise floor [pC]        = √(1 − var(true charge in BCM) / var BCM) · std(BCM fluctuation)</div>
+  <p class="prose">A perfect model would still differ from the BCM by this amount, so the fast part of any error cannot go much below it. It assumes linear relations and independent noise, so it is an estimate: in two segments the model ends slightly below it.</p>
+</section>
+
+<section class="method" id="m-vd" aria-labelledby="h-m-vd">
+  <h2 id="h-m-vd">Virtual BCM model (final model C)</h2>
+  <div class="formula">y(t) ≈ trend(t) + fluctuation(t)
+trend(t)       = mean of stage-1 predictions over the previous 51 shots
+fluctuation(t) = stage 2( x(t) − mean of x over the previous 51 shots,  x(t) )</div>
+  <dl class="terms">
+    <dt>Stage 1, trend</dt><dd>Ridge regression on the standardised features, then gradient-boosted trees on what Ridge misses. Trained only on the last W shots before the end of the training data, with W ∈ {all, 4000, 2000, 1000} chosen by the trend error on validation. Recent shots calibrate better because the instrument-to-BCM relation drifts.</dd>
+    <dt>Stage 2, fluctuation</dt><dd>Target: y(t) − mean of y over the previous 51 shots. Inputs: the same deviation of each feature plus the raw features, standardised on the fit shots. Model: MLP with 2 hidden layers of 64 units (GELU, dropout 0.1), AdamW, early stopping on validation, trained on the CCC loss. The average of 6 seeds, with a bias correction on the fit shots.</dd>
+    <dt>Physics constraint</dt><dd>More laser power must give more charge. Stage 1: the Ridge coefficient of laser power is constrained to ≥ 0 (bounded least squares), and the trees get a monotonic constraint on it. Stage 2: a training penalty on any negative slope, mean(relu(−∂output / ∂laser input)).</dd>
+    <dt>Tried and not kept</dt><dd>Log-scale targets, Huber regression, extra-trees, kNN, kernel ridge, GRU over 8 past shots, TCN over 128 shots, rolling-mean features, MSE / std / max-error losses, a correction model on out-of-fold differences, pooling and pretraining across segments, tuned ensembles.</dd>
+  </dl>
+</section>
+
+<section class="method" id="m-fc" aria-labelledby="h-m-fc">
+  <h2 id="h-m-fc">Forecasting from the past</h2>
+  <dl class="terms">
+    <dt>Setting</dt><dd>BCM and instruments known up to shot t−N; forecast y(t) for N = 1, 2, 5, 10, 20, 50, 100.</dd>
+    <dt>Oracle-trend floor</dt><dd>Std of y − 51-shot centred rolling mean of y on the test shots: the error of a forecast that knows the trend exactly but nothing about the shot-to-shot part.</dd>
+    <dt>History features</dt><dd>At the origin t−N: the last 8 BCM readings, BCM exponential moving averages (EWMA) at α = 1/2, 1/8, 1/32, 1/128, 1/512 (time scales of about 2 to 512 shots), the last 4 feature vectors, and the feature EWMAs at the same scales.</dd>
+    <dt>Models</dt><dd>EWMA of the BCM with α chosen per N on validation; gradient boosting with N as an input; multi-horizon MLP (123k parameters, 3 hidden layers, N as an input so one model learns all horizons, target = residual against the BCM EWMA at α = 1/32), with and without features, and pretrained on all segments then fine-tuned; tuned ensemble with weights ≥ 0 summing to 1 per segment and horizon (SLSQP on the validation error).</dd>
+    <dt>Two-step model</dt><dd>Encoder over the last 32 feature vectors up to t−N → x̂(t) (16 features, with its own loss) → second network on x̂(t), y(t−N) and the 51-shot BCM mean → y(t). 207k parameters, trained end to end.</dd>
+  </dl>
+</section>
+
+<section class="method" id="m-explore" aria-labelledby="h-m-explore">
+  <h2 id="h-m-explore">Exploration tools</h2>
+  <dl class="terms">
+    <dt>Lag scans</dt><dd>Shot-to-shot correlation of X(t + L) with BCM(t) for L = −5 … +5, after removing a 51-shot rolling mean. A peak at L = +1 means X is stored one row late. A shift is applied only above 5σ, because picking the best of 11 lags lets noise through at 3σ.</dd>
+    <dt>Image PCA</dt><dd>SVD of the 4×4-binned, background-subtracted images of a segment. The first components are beam position on the screen; brightness and spot size come next.</dd>
+    <dt>t-SNE</dt><dd>2-D map of the 16 standardised features (perplexity 40, PCA initialisation), coloured by segment, time and charge. Used to see run-level clusters and whether consecutive shots stay close.</dd>
+    <dt>Neighbour test</dt><dd>How often x(t−N) is among the 10 nearest neighbours of x(t) in the 16-D space, compared with chance (10 / block size).</dd>
+  </dl>
+</section>
+
+</div>
+
+<footer>Fast-Approximate · CLEAR hackathon · summary of notebooks 00–10_01 · charges in nC, differences in pC (1 nC = 1000 pC)</footer>
+</div>
+
+<script>
+(function () {
+  var tabs = Array.prototype.slice.call(document.querySelectorAll('[role="tab"]'));
+  function show(id, focus) {
+    tabs.forEach(function (tab) {
+      var on = tab.getAttribute('aria-controls') === id;
+      tab.setAttribute('aria-selected', on ? 'true' : 'false');
+      tab.tabIndex = on ? 0 : -1;
+      document.getElementById(tab.getAttribute('aria-controls')).hidden = !on;
+      if (on && focus) tab.focus();
+    });
+  }
+  tabs.forEach(function (tab, i) {
+    tab.addEventListener('click', function () {
+      var id = tab.getAttribute('aria-controls');
+      show(id, false);
+      try { history.replaceState(null, '', '#' + id); } catch (e) {}
+    });
+    tab.addEventListener('keydown', function (e) {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      var next = tabs[(i + (e.key === 'ArrowRight' ? 1 : tabs.length - 1)) % tabs.length];
+      show(next.getAttribute('aria-controls'), true);
+    });
+  });
+  // a link to a section inside Methods (or #methods itself) opens the Methods tab
+  function fromHash() {
+    var h = (location.hash || '').slice(1);
+    var target = h && document.getElementById(h);
+    if (!target) return;
+    var panel = target.closest('[role="tabpanel"]') || target;
+    if (panel.getAttribute('role') === 'tabpanel') show(panel.id, false);
+    if (target !== panel) target.scrollIntoView();
+  }
+  window.addEventListener('hashchange', fromHash);
+  fromHash();
+})();
+</script>
+</body>
+</html>
