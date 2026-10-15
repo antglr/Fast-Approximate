@@ -105,3 +105,44 @@ the instruments pay in the same-shot virtual diagnostic.
 - `12_trend_noise_decomposition.ipynb`: Lomb–Scargle spectra per regime, the gap-filling trap, the filter comparison.
 - `13_models_gp_ensembles_floor.ipynb`: GP, ensembles, stacking weights, gap to the BCM noise floor, intervals.
 - `14_forecasting_and_h1_leak.ipynb`: level forecasting, the h = 1 leak, forecast skill against the horizon.
+- `15_alignment_significance_intervals.ipynb`: the pulse alignment, same-shot and forecast results on the aligned data, quadratic ridge, bootstrap, intervals.
+
+## 7. Readings on the wrong shot in `results/datasets`, and the fix (`scripts/meter_alignment.py`, notebook 15)
+
+`extract_features.py` puts group B (lab meter, RF) one **row** earlier. On the full runs that is often not one
+**pulse**: 35–40 % of the rows of segs 1, 5 and 7 skip pulses, and the PC reads a shot 0.4–4.8 s after its trigger, so
+a late read already holds this pulse's meter value. Section 6's h = 1 leak was this.
+
+`meter_alignment.py` moves each reading to its own pulse with the rules of `pulses.py` (meter: previous pulse if read
+< 2.2 s after the trigger, else this pulse; RF: its own stamp − 1), as `run_data.py` does; a pulse without its own
+reading gets NaN. Output: `results/datasets_aligned/` (same layout). On segs 1, 4, 5, 7, 45–70 % of the lab and
+26–45 % of the PGLA readings move; segs 0, 2, 3, 6 are unchanged. A camera check per read-delay bin confirms the
+2.2 s switch on segs 5 and 7. Open: on seg 1, early reads follow neither pulse's camera well.
+
+| lab vs charge jitter, row t / t − 1 | seg 4 | seg 5 | seg 1 | seg 7 |
+|---|---|---|---|---|
+| `results/datasets` | 0.10 / 0.14 | 0.17 / 0.18 | 0.51 / 0.43 | 0.34 / 0.56 |
+| aligned | 0.17 / 0.08 | 0.30 / 0.10 | 0.66 / 0.23 | 0.65 / 0.21 |
+
+On the aligned data, the forecast gain at h = 1 equals that at h = 2–3 without any workaround: no leak.
+
+**Same-shot models on the aligned data** (`results/aligned/`): the nonlinear models improve at high charge
+(GRU seg 5 0.95 → 0.89 %, seg 6 0.68 → 0.63 %; XGBoost seg 5 1.26 → 0.95 %; seg 5 now 1.96× the noise floor, was
+2.25×). The linear ridge gets worse on segs 1 and 5 (1.12 → 1.29 %, 0.99 → 1.09 %): with its real signal, the lab
+meter's relation to the charge is curved. A **quadratic ridge** fixes it: 0.88 % on seg 5, 2.21 % on seg 7 (GRU
+0.89 / 2.40), 1.04 % on seg 1 (GRU 1.00). The GRU's edge at high charge was the curvature, not memory.
+
+## 8. Significance (circular block bootstrap, 50-shot blocks; `scripts/uncertainty_regimes.py`)
+
+- Same shot: the readings cut the error by 26–67 % against the level alone, significant on every segment. At high
+  charge GRU / GP beat the linear ridge by 11–22 % (segs 1, 5, 6), significantly; at low charge they are
+  indistinguishable.
+- Forecast: the 9-shot mean is beaten significantly on 5–7 of 7 segments at h = 1–5 (seg 4 is the exception); at
+  h = 50 mostly not significant. The instruments add ~0.5–1 point over the BCM history, within the intervals.
+
+## 9. Heteroscedastic 90 % intervals
+
+Split-conformal quantiles normalised by the robust spread of the last 200 errors known at prediction time. Against
+constant-width intervals: coverage closer to 90 % on average, better in the noisy half of the test shots, and much
+narrower at high charge for the same-shot model (seg 5: 8.2 → 4.7 % of the level at 93 % coverage; seg 1: 8.1 → 6.2 %).
+Seg 6's forecasts stay under-covered (78–85 %): its test region is noisier than its short training part.

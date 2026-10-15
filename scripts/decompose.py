@@ -8,8 +8,6 @@ import sys
 from functools import partial
 from pathlib import Path
 
-import matplotlib
-matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
@@ -197,6 +195,7 @@ def evaluate(datasets, names, robust=None):
 
 
 def main():
+    plt.switch_backend("Agg")                                  # here, not at import: notebooks import this module
     ap = argparse.ArgumentParser()
     ap.add_argument("datasets")
     ap.add_argument("out")
