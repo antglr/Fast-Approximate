@@ -2,3 +2,4 @@
 export SIF=/lustre/work/pdl18409/shared/containers/optimization_clear.sif
 export APPTAINERENV_PYTHONPATH=$HOME/pyext
 export RES=pdl18409_oct2026
+export APPTAINER_BIND=/lustre/work           # raw data and team folders inside the container

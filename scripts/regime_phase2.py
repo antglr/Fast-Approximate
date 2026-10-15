@@ -136,7 +136,7 @@ def main():
         fns = {(n, p): fn for n, fn, p in GRID}
         filters = {c["regime"]: causal(fns[c["filter"], c["param"]]) for c in json.loads(Path(a.filters).read_text())}
     segs, names = load(a.datasets, fast_filter=filters, robust=a.robust or None)
-    rows, info = [], {}
+    rows, info, saved = [], {}, {}
     for regime, ss in REGIMES.items():
         G = [segs[s] for s in ss if s in segs]
         print(regime, flush=True)
@@ -154,6 +154,7 @@ def main():
             j = g["jitter"]
             for name in ["level_only"] + list(preds):
                 p = np.zeros(g["n"]) if name == "level_only" else preds[name][i]
+                saved[f"seg{g['segment']}|{name}"] = np.exp(g["level"] + p).astype(np.float32)
                 sc = score(g, np.exp(g["level"] + p))
                 row = dict(regime=regime, segment=g["segment"], model=name, **sc)
                 row["gap_to_floor"] = sc["resid_rms_pct"] / NOISE_FLOOR_PCT.get(g["segment"], np.nan)
@@ -167,6 +168,7 @@ def main():
                 rows.append(row)
         pd.DataFrame(rows).to_csv(out / "scores.csv", index=False)
     (out / "info.json").write_text(json.dumps(info, indent=1))
+    np.savez_compressed(out / "predictions.npz", **saved)      # same-shot charge predictions (nC), every row
     df = pd.DataFrame(rows)
     with open(out / "summary.md", "w") as f:
         for metric in ("mae_pct", "jitter_explained", "gap_to_floor", "cover90", "width90_pct"):

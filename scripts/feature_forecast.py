@@ -72,7 +72,7 @@ def main():
     out.mkdir(parents=True, exist_ok=True)
     segs, names = load(a.datasets, robust=a.robust or None)
     F = {s: features(g, names, not a.no_late_fix) for s, g in segs.items()}
-    rows = []
+    rows, saved = [], {}
     for h in map(int, a.horizons.split(",")):
         for regime, ss in REGIMES.items():
             G = [segs[s] for s in ss if s in segs]
@@ -95,10 +95,12 @@ def main():
                 if g["test"].sum() < 50:
                     continue
                 for name, p in preds.items():
+                    saved[f"h{h}|seg{g['segment']}|{name}"] = np.exp(base[i] + p[i]).astype(np.float32)
                     sc = score(g, np.exp(base[i] + p[i]))
                     rows.append(dict(h=h, regime=regime, segment=g["segment"], model=name, **sc))
             print(f"h={h} {regime} done", flush=True)
             pd.DataFrame(rows).to_csv(out / "scores.csv", index=False)
+    np.savez_compressed(out / "predictions.npz", **saved)      # charge forecasts (nC), every row of every segment
     df = pd.DataFrame(rows)
     ref = df[df.model == "mean9 (baseline)"].set_index(["h", "segment"])["mae_nC"]
     df["vs_baseline_pct"] = 100 * (df.mae_nC / ref.reindex(pd.MultiIndex.from_frame(df[["h", "segment"]])).to_numpy() - 1)
