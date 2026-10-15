@@ -926,3 +926,31 @@ variance per band of period: 2–4, 4–10, 10–50 and > 50 shots.
   also follows the instruments' slow parts could close it. That band is about a third of seg 3's gap to the floor;
   the rest is spread over the other bands.
 
+
+## Pulse-aligned datasets (`extract_features_aligned.py`, `compare_datasets.py`, `results/datasets_aligned_check/`)
+
+A copy of `extract_features.py` (output `results/datasets_aligned`) that puts every reading on the 1.2 s pulse grid
+with `pulses.py` instead of shifting whole rows by one. Laser meters take `meter_shift(delay)`, RF traces `rf_shift`,
+the camera its own stamp. A reading whose pulse was not recorded becomes NaN, so it no longer lands on a neighbour's
+shot. Late in run 2026-10-08_21-11-47 about 40 % of rows are 2 pulses apart, so fewer rows stay valid.
+`FA_DATA_ROOT=<h5 dir> FA_JOBS=6 python -I extract_features_aligned.py` takes about 65 min.
+
+`compare_datasets.py <dir> <dir>` compares the two datasets segment by segment: the correlation of each input's
+shot-to-shot part with the charge, and a ridge test R². On rows both datasets keep, R² goes from 0.65 to 0.89 on
+seg 5 and from 0.19 to 0.25 on seg 3. It drops on segs 1 and 4 (0.44 → 0.38, 0.54 → 0.41), and seg 7's test region
+has only about 20 rows.
+
+## Filtering the slow level (`jitter_kalman.py`, `results/jitter_kalman/`)
+
+Compares levels other than the 50-shot trailing mean: a trailing median, a robust EMA (half-life 25, 4σ gate), and a
+local-level Kalman filter with the measured BCM noise as R (4σ gate, reset after 5 rejections). Each level is scored
+alone and with a ridge refitted on top. Tuned on the level alone, the Kalman filter is the best level (seg 5:
+140.5 vs 145.5 pC), but it follows the jitter the ridge would predict. With the ridge on top, nothing beats the
+trailing mean (seg 5: 69.5 pC trailing, 71.2 median, 72.5 EMA, 72.1 Kalman). Keep the trailing mean.
+
+## Results slides (`make_results_deck.py`, `results_slides.py`, `results/slides/figs/`)
+
+`python -I make_results_deck.py Forecasting.pptx Forecasting_results.pptx results_slides.py` writes a copy of the
+kickoff deck with results slides after each tier slide. The new slides reuse the deck's own shapes and renumber the
+pages. `results_slides.py` holds the text, tables and figures, with the source of each. Notebook figures were decoded
+to `/tmp/slides_figs`, and copies are kept in `results/slides/figs`.

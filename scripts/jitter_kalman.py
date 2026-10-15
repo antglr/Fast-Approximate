@@ -4,7 +4,7 @@
 # plus c^2 for the shot-to-shot jitter. Innovations beyond GATE sigma do not update the level (BCM-lost shots, spikes);
 # after RESET rejected shots in a row the level jumps to the reading (a real step). The prediction for shot t uses
 # shots < t only, as the trailing mean. q and c per regime on the early-stopping rows (last 10 % of each training part),
-# by the level's one-step MAE in pC. Compared with the trailing mean and a robust EMA (half-life 25 shots, 4-sigma
+# by the level's one-step MAE in pC. Compared with the trailing mean, the trailing median (same 50 shots), a robust EMA (half-life 25 shots, 4-sigma
 # gate on the training-part jitter MAD, as adnan_01). Test MAE in pC per segment, of the level alone and of the level
 # plus jitter_sequence.py's ridges refitted on each level's target (inputs unchanged: fast parts of the instruments).
 # Plot: the charge and each level on the last 600 shots of every segment (test region shaded).
@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 from sklearn.linear_model import RidgeCV
 from jitter_gp import A, B
-from jitter_sequence import ALPHAS, CV, GROUP, LAGS, LINEAR, NAMES, features, trailing
+from jitter_sequence import ALPHAS, CV, GROUP, LAGS, LINEAR, NAMES, SLOW as js_SLOW, features, trailing
 from same_shot_regression import REGIMES, stitched
 
 GATE, RESET = 4.0, 5
@@ -89,7 +89,8 @@ def main():
     assert e(kl) < 0.5 * e(tl.values), (e(kl), e(tl.values))
     assert abs(kl[n // 2 + 20] - lv[n // 2 + 20]) < 0.05
 
-    levels = {'trailing 50': old}
+    levels = {'trailing 50': old,
+              'trailing median 50': y.groupby(F.seg).transform(lambda c: c.shift(1).rolling(js_SLOW, min_periods=5).median())}
     sd = pd.Series(np.nan, F.index)
     for rname in REGIMES:
         R = F.regime == rname
@@ -149,7 +150,7 @@ def main():
     for a, g in zip(axes.flat, segs):
         i = F.index[F.seg == g][-600:]
         a.plot(i, F.Q[i], '.', color='0.6', ms=2, label='BCM charge')
-        for (name, lev), c in zip({k: v for k, v in levels.items() if not k.endswith('inputs too')}.items(), ('k', 'C2', 'C0', 'C3')):
+        for (name, lev), c in zip({k: v for k, v in levels.items() if not k.endswith('inputs too')}.items(), ('k', 'C4', 'C2', 'C0', 'C3')):
             a.plot(i, np.exp(lev[i]), color=c, lw=1, label=name)
         t = i[~F.train[i]]
         a.axvspan(t[0], t[-1], color='C1', alpha=0.1, label='test region')
